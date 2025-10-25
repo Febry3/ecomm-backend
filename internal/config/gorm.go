@@ -34,6 +34,8 @@ func NewGorm(config *viper.Viper, log *logrus.Logger) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		user, password, host, port, dbName, sslMode)
 
+	log.Info(dsn)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.New(&logrusWriter{Logger: log}, logger.Config{
 			SlowThreshold:             time.Second * 5,

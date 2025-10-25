@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/febry3/gamingin/internal/config"
 )
 
