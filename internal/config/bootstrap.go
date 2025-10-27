@@ -37,9 +37,10 @@ func Bootstrap(config *BootstrapConfig) {
 
 	// setup repo
 	userRepository := pg.NewUserRepositoryPg(config.DB, config.Log)
+	tokenRepository := pg.NewTokenRepositoryPg(config.DB, config.Log)
 
 	// setup usecase
-	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt)
+	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository)
 
 	// setup handler
 	authHandler := http.NewAuthHandler(config.App, authUsecase, config.Log)

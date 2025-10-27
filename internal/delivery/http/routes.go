@@ -1,6 +1,9 @@
 package http
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/febry3/gamingin/internal/delivery/http/middleware"
+	"github.com/gin-gonic/gin"
+)
 
 type RouteConfig struct {
 	App  *gin.Engine
@@ -8,9 +11,11 @@ type RouteConfig struct {
 }
 
 func (routeConfig *RouteConfig) Init() {
+	routeConfig.App.Use(middleware.CORSMiddleware())
 	v1 := routeConfig.App.Group("/v1/api")
 
-	v1.POST("/login", routeConfig.Auth.Login)
-	v1.POST("/register", routeConfig.Auth.Register)
-	v1.POST("/logout", routeConfig.Auth.Logout)
+	auth := v1.Group("/auth")
+	auth.POST("/login", routeConfig.Auth.Login)
+	auth.POST("/register", routeConfig.Auth.Register)
+	auth.POST("/logout", routeConfig.Auth.Logout)
 }

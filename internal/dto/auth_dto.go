@@ -19,8 +19,9 @@ type RegisterResponse struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
+	Email      string `json:"email" validate:"required,email"`
+	Password   string `json:"password" validate:"required,min=6"`
+	DeviceInfo string `json:"device_info"`
 }
 
 type LoginResponse struct {

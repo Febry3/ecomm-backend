@@ -24,7 +24,7 @@ func NewJwtService(config JwtConfig, log *logrus.Logger) *JwtService {
 	return &JwtService{config: config, log: log}
 }
 
-func (j *JwtService) IssueJwt(payload dto.JwtPayload) string {
+func (j *JwtService) IssueAccessToken(payload dto.JwtPayload) string {
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": payload.Username,
@@ -42,7 +42,7 @@ func (j *JwtService) IssueJwt(payload dto.JwtPayload) string {
 	return signedToken
 }
 
-func (j *JwtService) VerifyJwt(tokenString string) (*dto.JwtPayload, error) {
+func (j *JwtService) VerifyAccessToken(tokenString string) (*dto.JwtPayload, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")

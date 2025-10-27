@@ -18,6 +18,8 @@ func NewAuthHandler(router *gin.Engine, uc usecase.AuthUsecaseContract, log *log
 }
 
 func (a *AuthHandler) Login(c *gin.Context) {
+	deviceInfo := c.Request.Header.Get("User-Agent")
+
 	var loginRequest dto.LoginRequest
 
 	if err := c.ShouldBindJSON(&loginRequest); err != nil {
@@ -28,8 +30,8 @@ func (a *AuthHandler) Login(c *gin.Context) {
 		)
 		return
 	}
-
-	userResponse, err := a.uc.Login(c.Request.Context(), loginRequest)
+	loginRequest.DeviceInfo = deviceInfo
+	userResponse, refreshToken, err := a.uc.Login(c.Request.Context(), loginRequest)
 	if err != nil {
 		a.log.Errorf("[AuthDelivery] Login Error: %s", err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -38,6 +40,8 @@ func (a *AuthHandler) Login(c *gin.Context) {
 		})
 		return
 	}
+
+	c.SetCookie("refresh_token", refreshToken, 7*24*60*60, "/api/v1/auth", "localhost", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,

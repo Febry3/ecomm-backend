@@ -9,27 +9,31 @@ import (
 	"github.com/febry3/gamingin/internal/helpers"
 	"github.com/febry3/gamingin/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"time"
 )
 
 type AuthUsecaseContract interface {
-	Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, error)
+	Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, string, error)
 	Register(ctx context.Context, request dto.RegisterRequest) (dto.RegisterResponse, error)
 	Logout(ctx context.Context, tokenId string) error
 }
 
 type AuthUsecase struct {
-	user repository.UserRepository
-	log  *logrus.Logger
-	jwt  helpers.JwtService
+	token repository.TokenRepository
+	user  repository.UserRepository
+	log   *logrus.Logger
+	jwt   helpers.JwtService
 }
 
-func NewAuthUsecase(user repository.UserRepository, log *logrus.Logger, jwt helpers.JwtService) AuthUsecaseContract {
+func NewAuthUsecase(user repository.UserRepository, log *logrus.Logger, jwt helpers.JwtService, token repository.TokenRepository) AuthUsecaseContract {
 	return &AuthUsecase{
-		user: user,
-		log:  log,
-		jwt:  jwt,
+		token: token,
+		user:  user,
+		log:   log,
+		jwt:   jwt,
 	}
 }
 
@@ -80,34 +84,57 @@ func (a AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) 
 	}, nil
 }
 
-func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, error) {
+func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, string, error) {
 	if err := validator.New().Struct(request); err != nil {
 		a.log.Errorf("[AuthUsecase] Validate Register Error: %v", err.Error())
-		return dto.LoginResponse{}, err
+		return dto.LoginResponse{}, "", err
 	}
 
 	user, isFound, err := a.user.FindByEmail(ctx, request.Email)
 	if err != nil {
 		if !isFound {
 			a.log.Errorf("[AuthUsecase] Email Not Found: %v", err.Error())
-			return dto.LoginResponse{}, errorx.ErrInvalidLogin
+			return dto.LoginResponse{}, "", errorx.ErrInvalidLogin
 		}
 		a.log.Errorf("[AuthUsecase] FindByEmail Error: %v", err.Error())
-		return dto.LoginResponse{}, err
+		return dto.LoginResponse{}, "", err
 	}
 
 	isMatch := helpers.Compare([]byte(user.Password), request.Password)
-
 	if !isMatch {
-		return dto.LoginResponse{}, errorx.ErrInvalidCredentials
+		return dto.LoginResponse{}, "", errorx.ErrInvalidCredentials
 	}
 
-	accessToken := a.jwt.IssueJwt(dto.JwtPayload{
+	accessToken := a.jwt.IssueAccessToken(dto.JwtPayload{
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
 		Role:     user.Role,
 	})
+
+	plainTextRefreshToken := uuid.New().String()
+	tokenHash, err := helpers.Hash(plainTextRefreshToken)
+
+	if err != nil {
+		a.log.Errorf("[AuthUsecase] Hash Token Error: %v", err.Error())
+		return dto.LoginResponse{}, "", errorx.ErrInvalidCredentials
+	}
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	refreshToken := entity.RefreshToken{
+		TokenId:    uuid.New().String(),
+		UserId:     user.ID,
+		TokenHash:  tokenHash,
+		Role:       user.Role,
+		DeviceInfo: request.DeviceInfo,
+		IsRevoked:  false,
+		ExpiresAt:  expiresAt,
+	}
+
+	if _, err := a.token.CreateOrUpdate(ctx, &refreshToken); err != nil {
+		a.log.Errorf("[AuthUsecase] Failed to save refresh token: %v", err)
+		return dto.LoginResponse{}, "", err
+	}
 
 	return dto.LoginResponse{
 		ID:          user.ID,
@@ -117,7 +144,7 @@ func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.L
 		PhoneNumber: user.PhoneNumber,
 		Email:       user.Email,
 		AccessToken: accessToken,
-	}, nil
+	}, plainTextRefreshToken, nil
 }
 
 func (a AuthUsecase) Logout(ctx context.Context, tokenId string) error {
