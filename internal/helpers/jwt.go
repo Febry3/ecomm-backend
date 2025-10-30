@@ -2,11 +2,12 @@ package helpers
 
 import (
 	"errors"
+	"log"
+	"time"
+
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
-	"log"
-	"time"
 )
 
 type JwtConfig struct {
@@ -25,7 +26,7 @@ func NewJwtService(config JwtConfig, log *logrus.Logger) *JwtService {
 }
 
 func (j *JwtService) IssueAccessToken(payload dto.JwtPayload) string {
-	now := time.Now()
+	now := time.Now().UTC()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": payload.Username,
 		"email":    payload.Email,

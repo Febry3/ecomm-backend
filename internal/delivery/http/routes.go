@@ -1,7 +1,11 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/febry3/gamingin/internal/delivery/http/middleware"
+	"github.com/febry3/gamingin/internal/dto"
+	"github.com/febry3/gamingin/internal/helpers"
 	"github.com/gin-gonic/gin"
 )
 
@@ -10,12 +14,36 @@ type RouteConfig struct {
 	Auth AuthHandler
 }
 
-func (routeConfig *RouteConfig) Init() {
+func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 	routeConfig.App.Use(middleware.CORSMiddleware())
+
 	v1 := routeConfig.App.Group("/v1/api")
 
 	auth := v1.Group("/auth")
 	auth.POST("/login", routeConfig.Auth.Login)
 	auth.POST("/register", routeConfig.Auth.Register)
 	auth.POST("/logout", routeConfig.Auth.Logout)
+
+	protected := v1.Group("", middleware.AuthMiddleware(jwt))
+	{
+		protected.GET("/test", testUserInline) // inline test route
+	}
+}
+
+func testUserInline(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no user in context"})
+		return
+	}
+
+	claims := v.(*dto.JwtPayload)
+	c.JSON(http.StatusOK, gin.H{
+		"user_id":  claims.ID,
+		"username": claims.Username,
+		"email":    claims.Email,
+		"role":     claims.Role,
+		"exp":      claims.ExpiresAt, // from jwt.RegisteredClaims
+		"iat":      claims.IssuedAt,
+	})
 }

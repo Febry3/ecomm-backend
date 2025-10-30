@@ -2,7 +2,10 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"time"
+
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/entity"
 	"github.com/febry3/gamingin/internal/errorx"
@@ -12,7 +15,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"time"
 )
 
 type AuthUsecaseContract interface {
@@ -22,18 +24,20 @@ type AuthUsecaseContract interface {
 }
 
 type AuthUsecase struct {
-	token repository.TokenRepository
-	user  repository.UserRepository
-	log   *logrus.Logger
-	jwt   helpers.JwtService
+	token        repository.TokenRepository
+	user         repository.UserRepository
+	authProvider repository.AuthProviderRepository
+	log          *logrus.Logger
+	jwt          helpers.JwtService
 }
 
-func NewAuthUsecase(user repository.UserRepository, log *logrus.Logger, jwt helpers.JwtService, token repository.TokenRepository) AuthUsecaseContract {
+func NewAuthUsecase(user repository.UserRepository, log *logrus.Logger, jwt helpers.JwtService, token repository.TokenRepository, authProvider repository.AuthProviderRepository) AuthUsecaseContract {
 	return &AuthUsecase{
-		token: token,
-		user:  user,
-		log:   log,
-		jwt:   jwt,
+		token:        token,
+		user:         user,
+		log:          log,
+		jwt:          jwt,
+		authProvider: authProvider,
 	}
 }
 
@@ -62,7 +66,6 @@ func (a AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) 
 
 	user := entity.User{
 		Email:       request.Email,
-		Password:    hashedPassword,
 		Username:    request.Username,
 		FirstName:   request.FirstName,
 		LastName:    request.LastName,
@@ -71,6 +74,18 @@ func (a AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) 
 
 	if err := a.user.Create(ctx, &user); err != nil {
 		a.log.Errorf("[AuthUsecase] Create User Error: %v", err.Error())
+		return dto.RegisterResponse{}, err
+	}
+
+	authProvider := entity.AuthProvider{
+		UserId:     user.ID,
+		Password:   sql.NullString{String: hashedPassword, Valid: true},
+		Provider:   "email",
+		ProviderId: user.Email,
+	}
+
+	if err := a.authProvider.Create(ctx, &authProvider); err != nil {
+		a.log.Errorf("[AuthUsecase] Create Provider error: %v", err.Error())
 		return dto.RegisterResponse{}, err
 	}
 
@@ -100,7 +115,13 @@ func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.L
 		return dto.LoginResponse{}, "", err
 	}
 
-	isMatch := helpers.Compare([]byte(user.Password), request.Password)
+	authProvider, err := a.authProvider.FindByUserID(ctx, user.ID)
+	if err != nil {
+		a.log.Errorf("[AuthUsecase] FindByEmail on AuthProvider Error: %v", err.Error())
+		return dto.LoginResponse{}, "", err
+	}
+
+	isMatch := helpers.Compare([]byte(authProvider.Password.String), request.Password)
 	if !isMatch {
 		return dto.LoginResponse{}, "", errorx.ErrInvalidCredentials
 	}

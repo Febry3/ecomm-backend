@@ -1,11 +1,12 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 type AuthHandler struct {

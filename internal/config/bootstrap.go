@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/febry3/gamingin/internal/delivery/http"
 	"github.com/febry3/gamingin/internal/helpers"
 	"github.com/febry3/gamingin/internal/repository/pg"
@@ -9,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
-	"time"
 )
 
 type BootstrapConfig struct {
@@ -38,9 +39,10 @@ func Bootstrap(config *BootstrapConfig) {
 	// setup repo
 	userRepository := pg.NewUserRepositoryPg(config.DB, config.Log)
 	tokenRepository := pg.NewTokenRepositoryPg(config.DB, config.Log)
+	authProviderRepository := pg.NewAuthProvider(config.DB)
 
 	// setup usecase
-	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository)
+	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
 
 	// setup handler
 	authHandler := http.NewAuthHandler(config.App, authUsecase, config.Log)
@@ -50,5 +52,5 @@ func Bootstrap(config *BootstrapConfig) {
 		Auth: *authHandler,
 	}
 
-	routeConfig.Init()
+	routeConfig.Init(jwt)
 }
