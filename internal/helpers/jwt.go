@@ -44,11 +44,11 @@ func (j *JwtService) IssueAccessToken(payload dto.JwtPayload) string {
 }
 
 func (j *JwtService) VerifyAccessToken(tokenString string) (*dto.JwtPayload, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &dto.JwtPayload{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return j.config.Secret, nil
+		return []byte(j.config.Secret), nil
 	})
 
 	if err != nil {
