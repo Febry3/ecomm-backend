@@ -2,7 +2,7 @@ package pg
 
 import (
 	"context"
-	"errors"
+
 	"github.com/febry3/gamingin/internal/entity"
 	"github.com/febry3/gamingin/internal/errorx"
 	"github.com/febry3/gamingin/internal/repository"
@@ -42,15 +42,13 @@ func (t *TokenRepositoryPg) CreateOrUpdate(ctx context.Context, token *entity.Re
 	return token, nil
 }
 
-func (t *TokenRepositoryPg) FindByUserID(ctx context.Context, id int) (entity.RefreshToken, error) {
-	token := entity.RefreshToken{}
-	err := t.db.WithContext(ctx).First(&token, "user_id = ?", id).Error
+func (t *TokenRepositoryPg) FindByAccessToken(ctx context.Context, accessToken string) (entity.RefreshToken, error) {
+	var token entity.RefreshToken
+	err := t.db.WithContext(ctx).First(&token, "token_hash = ?", accessToken).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return entity.RefreshToken{}, errorx.ErrTokenInvalid
-		}
-		return entity.RefreshToken{}, err
+		return token, err
 	}
+
 	return token, nil
 }
 

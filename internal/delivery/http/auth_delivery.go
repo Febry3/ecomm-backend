@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/febry3/gamingin/internal/dto"
@@ -42,7 +43,7 @@ func (a *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("refresh_token", refreshToken, 7*24*60*60, "/api/v1/auth", "localhost", false, true)
+	c.SetCookie("refresh_token", refreshToken, 7*24*60*60, "/", "localhost", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
@@ -75,4 +76,39 @@ func (a *AuthHandler) Register(c *gin.Context) {
 		"data":    userResponse,
 	})
 }
-func (a *AuthHandler) Logout(c *gin.Context) {}
+
+func (a *AuthHandler) RefreshToken(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+
+	if err != nil {
+		a.log.Errorf("[AuthDelivery] Get Cookie Error: %s", err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "invalid request",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	newAccessToken, err := a.uc.RefreshAccessToken(c.Request.Context(), refreshToken)
+	if err != nil {
+		a.log.Errorf("[AuthDelivery] Refresh Token Error: %s", err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "invalid request",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	fmt.Println(newAccessToken)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":       true,
+		"message":      "token refreshed successfully",
+		"access_token": newAccessToken,
+	})
+}
+
+func (a *AuthHandler) Logout(c *gin.Context) {
+	//TODO implement me
+	panic("implement me")
+}

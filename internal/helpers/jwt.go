@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/febry3/gamingin/internal/dto"
+	"github.com/febry3/gamingin/internal/errorx"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 )
@@ -43,8 +44,8 @@ func (j *JwtService) IssueAccessToken(payload dto.JwtPayload) string {
 	return signedToken
 }
 
-func (j *JwtService) VerifyAccessToken(tokenString string) (*dto.JwtPayload, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &dto.JwtPayload{}, func(token *jwt.Token) (interface{}, error) {
+func (j *JwtService) VerifyToken(tokenString string) (*dto.JwtPayload, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &dto.JwtPayload{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -52,12 +53,15 @@ func (j *JwtService) VerifyAccessToken(tokenString string) (*dto.JwtPayload, err
 	})
 
 	if err != nil {
-		return nil, errors.New("failed to parse token")
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, errorx.ErrTokenExpired
+		}
+		return nil, errorx.ErrParseToken
 	}
 
 	claims, ok := token.Claims.(*dto.JwtPayload)
 	if !ok || !token.Valid {
-		return nil, errors.New("invalid token")
+		return nil, errorx.ErrTokenInvalid
 	}
 
 	return claims, nil

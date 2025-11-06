@@ -21,6 +21,7 @@ type AuthUsecaseContract interface {
 	Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, string, error)
 	Register(ctx context.Context, request dto.RegisterRequest) (dto.RegisterResponse, error)
 	Logout(ctx context.Context, tokenId string) error
+	RefreshAccessToken(ctx context.Context, refreshToken string) (string, error)
 }
 
 type AuthUsecase struct {
@@ -41,7 +42,7 @@ func NewAuthUsecase(user repository.UserRepository, log *logrus.Logger, jwt help
 	}
 }
 
-func (a AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) (dto.RegisterResponse, error) {
+func (a *AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) (dto.RegisterResponse, error) {
 	if err := validator.New().Struct(request); err != nil {
 		a.log.Errorf("[AuthUsecase] Validate Register Error: %v", err.Error())
 		return dto.RegisterResponse{}, err
@@ -99,7 +100,7 @@ func (a AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) 
 	}, nil
 }
 
-func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, string, error) {
+func (a *AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, string, error) {
 	if err := validator.New().Struct(request); err != nil {
 		a.log.Errorf("[AuthUsecase] Validate Register Error: %v", err.Error())
 		return dto.LoginResponse{}, "", err
@@ -134,18 +135,12 @@ func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.L
 	})
 
 	plainTextRefreshToken := uuid.New().String()
-	tokenHash, err := helpers.Hash(plainTextRefreshToken)
-
-	if err != nil {
-		a.log.Errorf("[AuthUsecase] Hash Token Error: %v", err.Error())
-		return dto.LoginResponse{}, "", errorx.ErrInvalidCredentials
-	}
 
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	refreshToken := entity.RefreshToken{
 		TokenId:    uuid.New().String(),
 		UserId:     user.ID,
-		TokenHash:  tokenHash,
+		TokenHash:  plainTextRefreshToken,
 		Role:       user.Role,
 		DeviceInfo: request.DeviceInfo,
 		IsRevoked:  false,
@@ -168,7 +163,35 @@ func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.L
 	}, plainTextRefreshToken, nil
 }
 
-func (a AuthUsecase) Logout(ctx context.Context, tokenId string) error {
+func (a *AuthUsecase) Logout(ctx context.Context, tokenId string) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (a *AuthUsecase) RefreshAccessToken(ctx context.Context, refreshToken string) (string, error) {
+	if refreshToken == "" {
+		return "", errorx.ErrTokenEmpty
+	}
+
+	token, err := a.token.FindByAccessToken(ctx, refreshToken)
+	if err != nil {
+		a.log.Errorf("[AuthUsecase] Find Refresh Token Error: %v", err.Error())
+		return "", err
+	}
+
+	user, err := a.user.FindByID(ctx, int(token.UserId))
+
+	if err != nil {
+		a.log.Errorf("[AuthUsecase] Find User Error: %v", err.Error())
+		return "", err
+	}
+
+	newAccessToken := a.jwt.IssueAccessToken(dto.JwtPayload{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		Role:     user.Role,
+	})
+
+	return newAccessToken, nil
 }

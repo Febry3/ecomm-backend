@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -20,8 +19,8 @@ func AuthMiddleware(jwt *helpers.JwtService) gin.HandlerFunc {
 
 		tokenString := strings.Split(authHeader, "Bearer ")[1]
 
-		user, err := jwt.VerifyAccessToken(tokenString)
-		fmt.Println(user)
+		user, err := jwt.VerifyToken(tokenString)
+
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid or expired token"})
 			return

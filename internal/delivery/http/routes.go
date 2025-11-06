@@ -2,10 +2,12 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/febry3/gamingin/internal/delivery/http/middleware"
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/helpers"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +17,15 @@ type RouteConfig struct {
 }
 
 func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
-	routeConfig.App.Use(middleware.CORSMiddleware())
+	corsConf := cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type", "Authorization", "Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	routeConfig.App.Use(cors.New(corsConf))
 
 	v1 := routeConfig.App.Group("/v1/api")
 
@@ -23,6 +33,7 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 	auth.POST("/login", routeConfig.Auth.Login)
 	auth.POST("/register", routeConfig.Auth.Register)
 	auth.POST("/logout", routeConfig.Auth.Logout)
+	auth.POST("/refresh", routeConfig.Auth.RefreshToken)
 
 	protected := v1.Group("", middleware.AuthMiddleware(jwt))
 	{

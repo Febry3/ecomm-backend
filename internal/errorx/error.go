@@ -12,4 +12,5 @@ var (
 	ErrTokenInvalid = errors.New("invalid refresh token")
 	ErrTokenRevoked = errors.New("refresh token revoked")
 	ErrTokenExpired = errors.New("refresh token expired")
+	ErrParseToken   = errors.New("failed to parse token")
 )
