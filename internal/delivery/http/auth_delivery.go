@@ -1,9 +1,10 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/febry3/gamingin/internal/helpers"
 	"golang.org/x/oauth2"
-	"net/http"
 
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/usecase"
@@ -81,7 +82,7 @@ func (a *AuthHandler) Register(c *gin.Context) {
 
 func (a *AuthHandler) RefreshToken(c *gin.Context) {
 	refreshToken, err := c.Cookie("refresh_token")
-	a.log.Debug("refresh token", refreshToken)
+
 	if err != nil {
 		a.log.Errorf("[AuthDelivery] Get Cookie Error: %s", err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -161,7 +162,7 @@ func (a *AuthHandler) LoginOrRegisterWithGoogle(c *gin.Context) {
 
 func (a *AuthHandler) Logout(c *gin.Context) {
 	accessToken, err := c.Cookie("refresh_token")
-	
+
 	if err != nil {
 		a.log.Errorf("[AuthDelivery] Get Cookie Error: %s", err.Error())
 		c.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
@@ -187,5 +188,4 @@ func (a *AuthHandler) Logout(c *gin.Context) {
 		"status":  true,
 		"message": "logout success",
 	})
-
 }

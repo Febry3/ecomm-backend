@@ -13,10 +13,9 @@ require (
 	gorm.io/gorm v1.31.0
 )
 
-require (
-	github.com/gin-contrib/cors v1.7.6
-	golang.org/x/oauth2 v0.33.0
-)
+require github.com/gin-contrib/cors v1.7.6
+
+require golang.org/x/oauth2 v0.33.0
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
