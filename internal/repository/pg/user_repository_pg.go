@@ -29,7 +29,7 @@ func (u UserRepositoryPg) Create(ctx context.Context, user *entity.User) error {
 	return nil
 }
 
-func (u UserRepositoryPg) FindByID(ctx context.Context, id int) (entity.User, error) {
+func (u UserRepositoryPg) FindByID(ctx context.Context, id int64) (entity.User, error) {
 	var user entity.User
 	result := u.db.WithContext(ctx).First(&user, id)
 	if result.Error != nil {
@@ -60,6 +60,6 @@ func (u UserRepositoryPg) Update(ctx context.Context, user entity.User) (entity.
 		u.log.Errorf("[UserRepositoryPg] Update User Error: %v]", result.Error.Error())
 		return entity.User{}, result.Error
 	}
-	
+
 	return user, nil
 }

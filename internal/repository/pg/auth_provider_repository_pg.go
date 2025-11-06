@@ -39,3 +39,12 @@ func (a *AuthProviderPg) FindByUserID(ctx context.Context, userId int64) (entity
 	}
 	return authProvider, nil
 }
+
+func (a *AuthProviderPg) FindByProviderId(ctx context.Context, authProviderId string, provider string) (entity.AuthProvider, error) {
+	authProvider := entity.AuthProvider{}
+	err := a.db.WithContext(ctx).First(&authProvider, "provider_id = ? AND provider = ?", authProviderId, provider).Error
+	if err != nil {
+		return entity.AuthProvider{}, err
+	}
+	return authProvider, nil
+}

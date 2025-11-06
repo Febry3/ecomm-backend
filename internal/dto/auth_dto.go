@@ -33,3 +33,17 @@ type LoginResponse struct {
 	Email       string `json:"email"`
 	AccessToken string `json:"access_token"`
 }
+
+type LoginWithGoogleRequest struct {
+	Code string `json:"code"`
+}
+
+type LoginWithGoogleData struct {
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	FirstName     string `json:"given_name"`
+	LastName      string `json:"family_name"`
+	PictureUrl    string `json:"picture"`
+	DeviceInfo    string `json:"device_info"`
+}

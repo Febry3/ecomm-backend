@@ -21,6 +21,8 @@ type AuthUsecaseContract interface {
 	Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, string, error)
 	Register(ctx context.Context, request dto.RegisterRequest) (dto.RegisterResponse, error)
 	Logout(ctx context.Context, tokenId string) error
+	RefreshAccessToken(ctx context.Context, refreshToken string) (string, error)
+	LoginOrRegisterWithGoogle(ctx context.Context, request dto.LoginWithGoogleData) (dto.LoginResponse, string, error)
 }
 
 type AuthUsecase struct {
@@ -41,7 +43,7 @@ func NewAuthUsecase(user repository.UserRepository, log *logrus.Logger, jwt help
 	}
 }
 
-func (a AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) (dto.RegisterResponse, error) {
+func (a *AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) (dto.RegisterResponse, error) {
 	if err := validator.New().Struct(request); err != nil {
 		a.log.Errorf("[AuthUsecase] Validate Register Error: %v", err.Error())
 		return dto.RegisterResponse{}, err
@@ -99,7 +101,7 @@ func (a AuthUsecase) Register(ctx context.Context, request dto.RegisterRequest) 
 	}, nil
 }
 
-func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, string, error) {
+func (a *AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.LoginResponse, string, error) {
 	if err := validator.New().Struct(request); err != nil {
 		a.log.Errorf("[AuthUsecase] Validate Register Error: %v", err.Error())
 		return dto.LoginResponse{}, "", err
@@ -134,18 +136,12 @@ func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.L
 	})
 
 	plainTextRefreshToken := uuid.New().String()
-	tokenHash, err := helpers.Hash(plainTextRefreshToken)
-
-	if err != nil {
-		a.log.Errorf("[AuthUsecase] Hash Token Error: %v", err.Error())
-		return dto.LoginResponse{}, "", errorx.ErrInvalidCredentials
-	}
 
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	refreshToken := entity.RefreshToken{
 		TokenId:    uuid.New().String(),
 		UserId:     user.ID,
-		TokenHash:  tokenHash,
+		TokenHash:  plainTextRefreshToken,
 		Role:       user.Role,
 		DeviceInfo: request.DeviceInfo,
 		IsRevoked:  false,
@@ -168,7 +164,117 @@ func (a AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.L
 	}, plainTextRefreshToken, nil
 }
 
-func (a AuthUsecase) Logout(ctx context.Context, tokenId string) error {
+func (a *AuthUsecase) Logout(ctx context.Context, tokenId string) error {
 	//TODO implement me
+	panic("implement me")
+}
+
+func (a *AuthUsecase) RefreshAccessToken(ctx context.Context, refreshToken string) (string, error) {
+	if refreshToken == "" {
+		return "", errorx.ErrTokenEmpty
+	}
+
+	token, err := a.token.FindByAccessToken(ctx, refreshToken)
+	if err != nil {
+		a.log.Errorf("[AuthUsecase] Find Refresh Token Error: %v", err.Error())
+		return "", err
+	}
+
+	user, err := a.user.FindByID(ctx, token.UserId)
+
+	if err != nil {
+		a.log.Errorf("[AuthUsecase] Find User Error: %v", err.Error())
+		return "", err
+	}
+
+	newAccessToken := a.jwt.IssueAccessToken(dto.JwtPayload{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		Role:     user.Role,
+	})
+
+	return newAccessToken, nil
+}
+
+func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto.LoginWithGoogleData) (dto.LoginResponse, string, error) {
+	a.log.Debug(request)
+	authProvider, err := a.authProvider.FindByProviderId(ctx, request.ID, "google")
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		a.log.Debug(err)
+		a.log.Errorf("[AuthUsecase] Find Provider Error: %v", err.Error())
+		return dto.LoginResponse{}, "", err
+	}
+
+	user, err := a.user.FindByID(ctx, authProvider.UserId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			tempUser := entity.User{
+				Email:      request.Email,
+				FirstName:  request.FirstName,
+				LastName:   request.LastName,
+				ProfileUrl: request.PictureUrl,
+			}
+			err = a.user.Create(ctx, &tempUser)
+			if err != nil {
+				a.log.Errorf("[AuthUsecase] Create User Error: %v", err.Error())
+				return dto.LoginResponse{}, "", err
+			}
+
+			authProvider := entity.AuthProvider{
+				UserId:     tempUser.ID,
+				Password:   sql.NullString{},
+				Provider:   "google",
+				ProviderId: request.ID,
+			}
+
+			if err := a.authProvider.Create(ctx, &authProvider); err != nil {
+				a.log.Errorf("[AuthUsecase] Create Provider error: %v", err.Error())
+				return dto.LoginResponse{}, "", err
+			}
+			user = tempUser
+		} else {
+			a.log.Errorf("[AuthUsecase] Find User Error: %v", err.Error())
+			return dto.LoginResponse{}, "", err
+		}
+	}
+
+	accessToken := a.jwt.IssueAccessToken(dto.JwtPayload{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		Role:     user.Role,
+	})
+
+	plainTextRefreshToken := uuid.New().String()
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	refreshToken := entity.RefreshToken{
+		TokenId:    uuid.New().String(),
+		UserId:     user.ID,
+		TokenHash:  plainTextRefreshToken,
+		Role:       user.Role,
+		DeviceInfo: request.DeviceInfo,
+		IsRevoked:  false,
+		ExpiresAt:  expiresAt,
+	}
+
+	if _, err := a.token.CreateOrUpdate(ctx, &refreshToken); err != nil {
+		a.log.Errorf("[AuthUsecase] Failed to save refresh token: %v", err)
+		return dto.LoginResponse{}, "", err
+	}
+
+	return dto.LoginResponse{
+		ID:          user.ID,
+		Username:    user.Username,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		PhoneNumber: user.PhoneNumber,
+		Email:       user.Email,
+		AccessToken: accessToken,
+	}, plainTextRefreshToken, nil
+}
+
+func (a *AuthUsecase) LogoutWithGoogle(ctx context.Context, tokenId string) error {
 	panic("implement me")
 }

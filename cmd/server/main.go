@@ -11,7 +11,6 @@ func main() {
 	viperConfig := config.NewViper(log)
 	app := config.NewGin(viperConfig)
 	db, err := config.NewGorm(viperConfig, log)
-	// db.AutoMigrate(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{})
 
 	if err != nil {
 		log.Errorf("unable to connect database: %v", err.Error())

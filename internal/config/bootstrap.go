@@ -36,6 +36,8 @@ func Bootstrap(config *BootstrapConfig) {
 		RefreshTTL: refreshTtl,
 	}, config.Log)
 
+	gauth := NewGoogleAuth(config.Config)
+
 	// setup repo
 	userRepository := pg.NewUserRepositoryPg(config.DB, config.Log)
 	tokenRepository := pg.NewTokenRepositoryPg(config.DB, config.Log)
@@ -45,7 +47,7 @@ func Bootstrap(config *BootstrapConfig) {
 	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
 
 	// setup handler
-	authHandler := http.NewAuthHandler(config.App, authUsecase, config.Log)
+	authHandler := http.NewAuthHandler(config.App, authUsecase, config.Log, gauth)
 
 	routeConfig := http.RouteConfig{
 		App:  config.App,
