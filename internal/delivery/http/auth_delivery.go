@@ -165,7 +165,7 @@ func (a *AuthHandler) Logout(c *gin.Context) {
 
 	if err != nil {
 		a.log.Errorf("[AuthDelivery] Get Cookie Error: %s", err.Error())
-		c.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
+		c.SetCookie("refresh_token", "", -1, "*", "localhost", false, true)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  true,
 			"message": "logout successfully",
