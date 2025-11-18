@@ -26,5 +26,6 @@ func GetGoogleUserInfo(ctx context.Context, token *oauth2.Token, gauth *oauth2.C
 	if err != nil {
 		return dto.LoginWithGoogleData{}, err
 	}
+
 	return userInfo, nil
 }

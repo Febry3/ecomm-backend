@@ -32,6 +32,7 @@ type LoginResponse struct {
 	PhoneNumber string `json:"phone_number"`
 	Email       string `json:"email"`
 	AccessToken string `json:"access_token"`
+	ProfileUrl  string `json:"profile_url"`
 }
 
 type LoginWithGoogleRequest struct {
@@ -42,8 +43,7 @@ type LoginWithGoogleData struct {
 	ID            string `json:"id"`
 	Email         string `json:"email"`
 	VerifiedEmail bool   `json:"verified_email"`
-	FirstName     string `json:"given_name"`
-	LastName      string `json:"family_name"`
+	FirstName     string `json:"name"`
 	PictureUrl    string `json:"picture"`
 	DeviceInfo    string `json:"device_info"`
 }

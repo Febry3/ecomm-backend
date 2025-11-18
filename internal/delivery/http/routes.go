@@ -55,7 +55,7 @@ func testUserInline(c *gin.Context) {
 		"username": claims.Username,
 		"email":    claims.Email,
 		"role":     claims.Role,
-		"exp":      claims.ExpiresAt, // from jwt.RegisteredClaims
+		"exp":      claims.ExpiresAt,
 		"iat":      claims.IssuedAt,
 	})
 }

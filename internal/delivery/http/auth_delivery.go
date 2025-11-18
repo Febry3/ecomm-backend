@@ -45,7 +45,7 @@ func (a *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("refresh_token", refreshToken, 7*24*60*60, "/", "localhost", false, true)
+	c.SetCookie("refresh_token", refreshToken, 7*24*60*60, "*", "localhost", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
@@ -81,7 +81,7 @@ func (a *AuthHandler) Register(c *gin.Context) {
 
 func (a *AuthHandler) RefreshToken(c *gin.Context) {
 	refreshToken, err := c.Cookie("refresh_token")
-
+	a.log.Debug("refresh token", refreshToken)
 	if err != nil {
 		a.log.Errorf("[AuthDelivery] Get Cookie Error: %s", err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -106,11 +106,6 @@ func (a *AuthHandler) RefreshToken(c *gin.Context) {
 		"message":      "token refreshed successfully",
 		"access_token": newAccessToken,
 	})
-}
-
-func (a *AuthHandler) Logout(c *gin.Context) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (a *AuthHandler) LoginOrRegisterWithGoogle(c *gin.Context) {
@@ -155,11 +150,42 @@ func (a *AuthHandler) LoginOrRegisterWithGoogle(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("refresh_token", refreshToken, 7*24*60*60, "/", "localhost", false, true)
+	c.SetCookie("refresh_token", refreshToken, 7*24*60*60, "*", "localhost", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "login success",
 		"data":    userResponse,
 	})
+}
+
+func (a *AuthHandler) Logout(c *gin.Context) {
+	accessToken, err := c.Cookie("refresh_token")
+	
+	if err != nil {
+		a.log.Errorf("[AuthDelivery] Get Cookie Error: %s", err.Error())
+		c.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"status":  true,
+			"message": "logout successfully",
+		})
+		return
+	}
+
+	err = a.uc.Logout(c.Request.Context(), accessToken)
+	if err != nil {
+		a.log.Errorf("[AuthDelivery] Logout Error: %s", err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "failed to logout",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.SetCookie("refresh_token", "", -1, "*", "localhost", false, true)
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "logout success",
+	})
+
 }

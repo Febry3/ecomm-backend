@@ -164,11 +164,6 @@ func (a *AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.
 	}, plainTextRefreshToken, nil
 }
 
-func (a *AuthUsecase) Logout(ctx context.Context, tokenId string) error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (a *AuthUsecase) RefreshAccessToken(ctx context.Context, refreshToken string) (string, error) {
 	if refreshToken == "" {
 		return "", errorx.ErrTokenEmpty
@@ -198,7 +193,6 @@ func (a *AuthUsecase) RefreshAccessToken(ctx context.Context, refreshToken strin
 }
 
 func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto.LoginWithGoogleData) (dto.LoginResponse, string, error) {
-	a.log.Debug(request)
 	authProvider, err := a.authProvider.FindByProviderId(ctx, request.ID, "google")
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		a.log.Debug(err)
@@ -212,7 +206,6 @@ func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto
 			tempUser := entity.User{
 				Email:      request.Email,
 				FirstName:  request.FirstName,
-				LastName:   request.LastName,
 				ProfileUrl: request.PictureUrl,
 			}
 			err = a.user.Create(ctx, &tempUser)
@@ -272,9 +265,19 @@ func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto
 		PhoneNumber: user.PhoneNumber,
 		Email:       user.Email,
 		AccessToken: accessToken,
+		ProfileUrl:  user.ProfileUrl,
 	}, plainTextRefreshToken, nil
 }
 
-func (a *AuthUsecase) LogoutWithGoogle(ctx context.Context, tokenId string) error {
-	panic("implement me")
+func (a *AuthUsecase) Logout(ctx context.Context, refreshToken string) error {
+	if refreshToken == "" {
+		return errorx.ErrTokenEmpty
+	}
+
+	err := a.token.DeleteByAccessToken(ctx, refreshToken)
+	if err != nil {
+		a.log.Errorf("[AuthUsecase] Delete Refresh Token Error: %v", err.Error())
+		return err
+	}
+	return nil
 }

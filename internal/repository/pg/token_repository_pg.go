@@ -59,3 +59,11 @@ func (t *TokenRepositoryPg) DeleteByUserID(ctx context.Context, id int) error {
 	}
 	return nil
 }
+
+func (t *TokenRepositoryPg) DeleteByAccessToken(ctx context.Context, accessToken string) error {
+	err := t.db.WithContext(ctx).Where("token_hash = ?", accessToken).Delete(&entity.RefreshToken{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
