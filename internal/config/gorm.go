@@ -30,9 +30,10 @@ func NewGorm(config *viper.Viper, log *logrus.Logger) (*gorm.DB, error) {
 	maxIdleConns := config.GetInt("database.max_idle_conns")
 	connMaxLifeTime := config.GetDuration("database.conn_max_lifetime")
 	connMaxIdleTime := config.GetDuration("database.conn_max_idle_time")
+	timezone := config.GetString("database.time_zone")
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		user, password, host, port, dbName, sslMode)
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&TimeZone=%s",
+		user, password, host, port, dbName, sslMode, timezone)
 
 	log.Info(dsn)
 
