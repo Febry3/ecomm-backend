@@ -18,7 +18,7 @@ type AuthHandler struct {
 	gauth *oauth2.Config
 }
 
-func NewAuthHandler(router *gin.Engine, uc usecase.AuthUsecaseContract, log *logrus.Logger, gauth *oauth2.Config) *AuthHandler {
+func NewAuthHandler(uc usecase.AuthUsecaseContract, log *logrus.Logger, gauth *oauth2.Config) *AuthHandler {
 	return &AuthHandler{uc: uc, log: log, gauth: gauth}
 }
 
@@ -82,7 +82,7 @@ func (a *AuthHandler) Register(c *gin.Context) {
 
 func (a *AuthHandler) RefreshToken(c *gin.Context) {
 	refreshToken, err := c.Cookie("refresh_token")
-
+	a.log.Debug("check refresh token", refreshToken)
 	if err != nil {
 		a.log.Errorf("[AuthDelivery] Get Cookie Error: %s", err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{

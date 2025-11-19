@@ -47,7 +47,7 @@ func Bootstrap(config *BootstrapConfig) {
 	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
 
 	// setup handler
-	authHandler := http.NewAuthHandler(config.App, authUsecase, config.Log, gauth)
+	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
 
 	routeConfig := http.RouteConfig{
 		App:  config.App,

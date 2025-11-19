@@ -18,12 +18,12 @@ type JwtConfig struct {
 }
 
 type JwtService struct {
-	config JwtConfig
+	Config JwtConfig
 	log    *logrus.Logger
 }
 
 func NewJwtService(config JwtConfig, log *logrus.Logger) *JwtService {
-	return &JwtService{config: config, log: log}
+	return &JwtService{Config: config, log: log}
 }
 
 func (j *JwtService) IssueAccessToken(payload dto.JwtPayload) string {
@@ -33,11 +33,11 @@ func (j *JwtService) IssueAccessToken(payload dto.JwtPayload) string {
 		"email":    payload.Email,
 		"user_id":  payload.ID,
 		"role":     payload.Role,
-		"exp":      jwt.NewNumericDate(now.Add(j.config.AccessTTL)),
+		"exp":      jwt.NewNumericDate(now.Add(j.Config.AccessTTL)),
 		"iat":      jwt.NewNumericDate(now),
 	})
 
-	signedToken, err := token.SignedString([]byte(j.config.Secret))
+	signedToken, err := token.SignedString([]byte(j.Config.Secret))
 	if err != nil {
 		log.Fatalf("signing token error: %v", err)
 	}
@@ -49,7 +49,7 @@ func (j *JwtService) VerifyToken(tokenString string) (*dto.JwtPayload, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return []byte(j.config.Secret), nil
+		return []byte(j.Config.Secret), nil
 	})
 
 	if err != nil {

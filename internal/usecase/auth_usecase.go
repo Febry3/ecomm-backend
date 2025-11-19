@@ -137,7 +137,7 @@ func (a *AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.
 
 	plainTextRefreshToken := uuid.New().String()
 
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	expiresAt := time.Now().Add(a.jwt.Config.RefreshTTL)
 	refreshToken := entity.RefreshToken{
 		TokenId:    uuid.New().String(),
 		UserId:     user.ID,
@@ -175,6 +175,12 @@ func (a *AuthUsecase) RefreshAccessToken(ctx context.Context, refreshToken strin
 		return "", err
 	}
 
+	a.log.Debug("[AuthUsecase] Refresh Token Expired", token.IsExpired(), token.ExpiresAt, time.Now())
+	if token.IsExpired() {
+		a.log.Errorf("[AuthUsecase] Refresh Token is expired")
+		return "", errorx.ErrTokenExpired
+	}
+
 	user, err := a.user.FindByID(ctx, token.UserId)
 
 	if err != nil {
@@ -195,7 +201,6 @@ func (a *AuthUsecase) RefreshAccessToken(ctx context.Context, refreshToken strin
 func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto.LoginWithGoogleData) (dto.LoginResponse, string, error) {
 	authProvider, err := a.authProvider.FindByProviderId(ctx, request.ID, "google")
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		a.log.Debug(err)
 		a.log.Errorf("[AuthUsecase] Find Provider Error: %v", err.Error())
 		return dto.LoginResponse{}, "", err
 	}
@@ -241,7 +246,7 @@ func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto
 
 	plainTextRefreshToken := uuid.New().String()
 
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	expiresAt := time.Now().Add(a.jwt.Config.RefreshTTL)
 	refreshToken := entity.RefreshToken{
 		TokenId:    uuid.New().String(),
 		UserId:     user.ID,
