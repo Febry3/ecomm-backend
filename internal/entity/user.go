@@ -11,8 +11,8 @@ type User struct {
 	Email         string         `json:"email" gorm:"not null;uniqueIndex"`
 	Role          string         `json:"role" gorm:"type:text;check:role IN ('user','seller','admin');default:user;not null"`
 	ProfileUrl    string         `json:"profile_url" gorm:"default:null"`
-	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime;type:timestamptz"`
+	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime;type:timestamptz"`
 	AuthProviders []AuthProvider `gorm:"foreignKey:UserId"`
 	RefreshTokens []RefreshToken `gorm:"foreignKey:UserId"`
 }

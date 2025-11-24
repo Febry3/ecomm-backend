@@ -14,6 +14,7 @@ import (
 type RouteConfig struct {
 	App  *gin.Engine
 	Auth AuthHandler
+	User UserHandler
 }
 
 func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
@@ -36,9 +37,11 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 	auth.POST("/refresh", routeConfig.Auth.RefreshToken)
 	auth.POST("/google", routeConfig.Auth.LoginOrRegisterWithGoogle)
 
-	protected := v1.Group("", middleware.AuthMiddleware(jwt))
+	protected := v1.Group("/user", middleware.AuthMiddleware(jwt))
 	{
-		protected.GET("/test", testUserInline) // inline test route
+		protected.GET("/test", testUserInline)
+		protected.PUT("", routeConfig.User.UpdateUserProfile)
+		protected.GET("", routeConfig.User.GetUserProfile)
 	}
 }
 

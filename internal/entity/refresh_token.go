@@ -11,8 +11,8 @@ type RefreshToken struct {
 	Role       string    `json:"role" gorm:"not null;default:user;check:role IN ('user','seller','admin')"`
 	IsRevoked  bool      `json:"is_revoked" gorm:"not null;default:false;index"`
 	DeviceInfo string    `json:"device_info" gorm:"size:255;uniqueIndex:ux_refresh_tokens_user_device"`
-	ExpiresAt  time.Time `json:"expired_at" gorm:"not null;index"`
-	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
+	ExpiresAt  time.Time `json:"expired_at" gorm:"not null;index;type:timestamptz"`
+	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime;type:timestamptz"`
 }
 
 func (r *RefreshToken) TableName() string {

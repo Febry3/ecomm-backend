@@ -2,7 +2,7 @@ package pg
 
 import (
 	"context"
-	"errors"
+
 	"github.com/febry3/gamingin/internal/errorx"
 	"github.com/sirupsen/logrus"
 
@@ -51,14 +51,17 @@ func (u UserRepositoryPg) FindByEmail(ctx context.Context, email string) (entity
 }
 
 func (u UserRepositoryPg) Update(ctx context.Context, user entity.User) (entity.User, error) {
-	result := u.db.WithContext(ctx).First(&user, user.ID).Save(&user)
+	u.log.Debug("[UserRepositoryPg] Update User", user)
+	result := u.db.WithContext(ctx).Save(&user)
+
 	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			u.log.Errorf("[UserRepositoryPg] User Not Found: %v]", result.Error.Error())
-			return entity.User{}, errorx.ErrUserNotFound
-		}
 		u.log.Errorf("[UserRepositoryPg] Update User Error: %v]", result.Error.Error())
 		return entity.User{}, result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		u.log.Errorf("[UserRepositoryPg] User Not Found (No rows affected)")
+		return entity.User{}, errorx.ErrUserNotFound
 	}
 
 	return user, nil

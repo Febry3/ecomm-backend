@@ -1,8 +1,10 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/febry3/gamingin/internal/errorx"
 	"github.com/febry3/gamingin/internal/helpers"
 	"golang.org/x/oauth2"
 
@@ -82,7 +84,6 @@ func (a *AuthHandler) Register(c *gin.Context) {
 
 func (a *AuthHandler) RefreshToken(c *gin.Context) {
 	refreshToken, err := c.Cookie("refresh_token")
-	a.log.Debug("check refresh token", refreshToken)
 	if err != nil {
 		a.log.Errorf("[AuthDelivery] Get Cookie Error: %s", err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -94,6 +95,13 @@ func (a *AuthHandler) RefreshToken(c *gin.Context) {
 
 	newAccessToken, err := a.uc.RefreshAccessToken(c.Request.Context(), refreshToken)
 	if err != nil {
+		if errors.Is(err, errorx.ErrTokenExpired) {
+			a.log.Errorf("[AuthDelivery] Token Expired: %s", err.Error())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "token expired",
+				"error":   err.Error(),
+			})
+		}
 		a.log.Errorf("[AuthDelivery] Refresh Token Error: %s", err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "invalid request",

@@ -45,13 +45,15 @@ func Bootstrap(config *BootstrapConfig) {
 
 	// setup usecase
 	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
-
+	userUsecase := usecase.NewUserUsecase(userRepository, config.Log)
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
+	userHandler := http.NewUserHandler(userUsecase, config.Log)
 
 	routeConfig := http.RouteConfig{
 		App:  config.App,
 		Auth: *authHandler,
+		User: *userHandler,
 	}
 
 	routeConfig.Init(jwt)
