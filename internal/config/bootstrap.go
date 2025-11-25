@@ -5,6 +5,7 @@ import (
 
 	"github.com/febry3/gamingin/internal/delivery/http"
 	"github.com/febry3/gamingin/internal/helpers"
+	"github.com/febry3/gamingin/internal/infra/storage"
 	"github.com/febry3/gamingin/internal/repository/pg"
 	"github.com/febry3/gamingin/internal/usecase"
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,10 @@ func Bootstrap(config *BootstrapConfig) {
 		RefreshTTL: refreshTtl,
 	}, config.Log)
 
+	// service
 	gauth := NewGoogleAuth(config.Config)
+	supabaseConfig := NewSupabaseConfig(config.Config)
+	storage := storage.NewSupabaseHttpRepo(supabaseConfig)
 
 	// setup repo
 	userRepository := pg.NewUserRepositoryPg(config.DB, config.Log)
@@ -45,7 +49,7 @@ func Bootstrap(config *BootstrapConfig) {
 
 	// setup usecase
 	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
-	userUsecase := usecase.NewUserUsecase(userRepository, config.Log)
+	userUsecase := usecase.NewUserUsecase(userRepository, config.Log, storage)
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
 	userHandler := http.NewUserHandler(userUsecase, config.Log)

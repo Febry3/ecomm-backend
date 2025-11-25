@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/febry3/gamingin/internal/config"
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -32,10 +31,6 @@ func main() {
 		}
 	}()
 
-	app.GET("/slow", func(c *gin.Context) {
-		time.Sleep(6 * time.Second)
-		c.JSON(200, gin.H{"message": "I finished!"})
-	})
 
 	config.Bootstrap(&config.BootstrapConfig{
 		Log:    log,

@@ -42,6 +42,7 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		protected.GET("/test", testUserInline)
 		protected.PUT("", routeConfig.User.UpdateUserProfile)
 		protected.GET("", routeConfig.User.GetUserProfile)
+		protected.POST("/avatar", routeConfig.User.UpdateUserAvatar)
 	}
 }
 

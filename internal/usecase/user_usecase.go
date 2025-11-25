@@ -4,24 +4,30 @@ import (
 	"context"
 
 	"github.com/febry3/gamingin/internal/dto"
+	"github.com/febry3/gamingin/internal/infra/storage"
 	"github.com/febry3/gamingin/internal/repository"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type UserUsecaseContract interface {
+	UpdateAvatar(ctx context.Context, fileData []byte, userId int64) (dto.UserResponse, error)
 	UpdateProfile(ctx context.Context, userRequest dto.UserRequest) (dto.UserResponse, error)
 	GetProfile(ctx context.Context, userId int64) (dto.UserResponse, error)
 }
 
 type UserUsecase struct {
+	storage storage.ObjectStorage
 	user repository.UserRepository
 	log  *logrus.Logger
 }
 
-func NewUserUsecase(user repository.UserRepository, log *logrus.Logger) UserUsecaseContract {
+
+func NewUserUsecase(user repository.UserRepository, log *logrus.Logger, storage storage.ObjectStorage) UserUsecaseContract {
 	return &UserUsecase{
 		user: user,
 		log:  log,
+		storage: storage,
 	}
 }
 
@@ -50,6 +56,36 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userRequest dto.UserReq
 	}
 
 	userRequest.UpdateEntity(&user)
+	updatedUser, err := u.user.Update(ctx, user)
+	if err != nil {
+		u.log.Error("[UserUsecase] UpdateUser Error", err.Error())
+		return dto.UserResponse{}, err
+	}
+
+	return dto.UserResponse{
+		ProfileUrl:  updatedUser.ProfileUrl,
+		Username:    updatedUser.Username,
+		FirstName:   updatedUser.FirstName,
+		LastName:    updatedUser.LastName,
+		PhoneNumber: updatedUser.PhoneNumber,
+	}, nil
+}
+
+func (u *UserUsecase) UpdateAvatar(ctx context.Context, fileData []byte, userId int64) (dto.UserResponse, error) {
+	fileName := uuid.New().String()
+
+	user, err := u.user.FindByID(ctx, userId)
+	if err != nil {
+		u.log.Error("[UserUsecase] FindByID Error", err.Error())
+		return dto.UserResponse{}, err
+	}
+	newUrl, err := u.storage.Upload(ctx, fileName, fileData, "avatar")
+	if err != nil {
+		u.log.Error("[UserUsecase] Upload Error", err.Error())
+		return dto.UserResponse{}, err
+	}
+
+	user.ProfileUrl = newUrl
 	updatedUser, err := u.user.Update(ctx, user)
 	if err != nil {
 		u.log.Error("[UserUsecase] UpdateUser Error", err.Error())

@@ -7,27 +7,35 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 )
 
-type SupabaseHttp struct {
-	projectRef string
-	apiKey     string
-	client     *http.Client
+type SupabaseConfig struct {
+	ProjectRef string
+	ApiKey     string
 }
 
-func NewSupabaseHttpRepo(projectRef, apiKey, bucketName string) ObjectStorage {
+type SupabaseHttp struct {
+	config SupabaseConfig
+	client *http.Client
+}
+
+func NewSupabaseHttpRepo(config SupabaseConfig) ObjectStorage {
 	return &SupabaseHttp{
-		projectRef: projectRef,
-		apiKey:     apiKey,
-		client:     &http.Client{},
+		config: config,
+		client: &http.Client{},
 	}
 }
 
 func (r *SupabaseHttp) Upload(ctx context.Context, fileName string, fileData []byte, bucketName string) (string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
+	contentType := http.DetectContentType(fileData)
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, fileName))
+	h.Set("Content-Type", contentType)
 
-	part, err := writer.CreateFormFile("file", fileName)
+	part, err := writer.CreatePart(h)
 	if err != nil {
 		return "", err
 	}
@@ -38,14 +46,14 @@ func (r *SupabaseHttp) Upload(ctx context.Context, fileName string, fileData []b
 	}
 
 	writer.Close()
-	url := fmt.Sprintf("https://%s.supabase.co/storage/v1/object/%s/%s", r.projectRef, bucketName, fileName)
+	url := fmt.Sprintf("https://%s.supabase.co/storage/v1/object/%s/%s", r.config.ProjectRef, bucketName, fileName)
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
 	if err != nil {
 		return "", err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+r.apiKey)
+	req.Header.Set("Authorization", "Bearer "+r.config.ApiKey)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("x-upsert", "true")
 
@@ -57,10 +65,10 @@ func (r *SupabaseHttp) Upload(ctx context.Context, fileName string, fileData []b
 
 	if resp.StatusCode != 200 {
 		respBody, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("upload failed with status %d: %s", resp.StatusCode, string(respBody))
+		return "", fmt.Errorf("upload  with status %d: %s", resp.StatusCode, string(respBody))
 	}
 
-	publicURL := fmt.Sprintf("https://%s.supabase.co/storage/v1/object/public/%s/%s", r.projectRef, bucketName, fileName)
+	publicURL := fmt.Sprintf("https://%s.supabase.co/storage/v1/object/public/%s/%s", r.config.ProjectRef, bucketName, fileName)
 	return publicURL, nil
 }
 
