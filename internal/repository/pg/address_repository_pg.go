@@ -18,22 +18,31 @@ func NewAddressRepository(db *gorm.DB) repository.AddressRepository {
 	}
 }
 
-// Create implements repository.AddressRepository.
 func (a *AddressProviderPg) Create(ctx context.Context, address entity.Address) (entity.Address, error) {
-	panic("unimplemented")
+	if err := a.db.Create(&address).Error; err != nil {
+		return entity.Address{}, err
+	}
+	return address, nil
 }
 
-// Delete implements repository.AddressRepository.
 func (a *AddressProviderPg) Delete(ctx context.Context, id int64) error {
-	panic("unimplemented")
+	if err := a.db.Delete(&entity.Address{}, id).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
-// FindByUserID implements repository.AddressRepository.
 func (a *AddressProviderPg) FindByUserID(ctx context.Context, id int64) (entity.Address, error) {
-	panic("unimplemented")
+	var address entity.Address
+	if err := a.db.First(&address, id).Error; err != nil {
+		return entity.Address{}, err
+	}
+	return address, nil
 }
 
-// Update implements repository.AddressRepository.
-func (a *AddressProviderPg) Update(ctx context.Context, address entity.Address, id int64) (entity.Address, error) {
-	panic("unimplemented")
+func (a *AddressProviderPg) Update(ctx context.Context, address entity.Address) (entity.Address, error) {
+	if err := a.db.Save(&address).Error; err != nil {
+		return entity.Address{}, err
+	}
+	return address, nil
 }

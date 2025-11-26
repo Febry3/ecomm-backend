@@ -18,15 +18,14 @@ type UserUsecaseContract interface {
 
 type UserUsecase struct {
 	storage storage.ObjectStorage
-	user repository.UserRepository
-	log  *logrus.Logger
+	user    repository.UserRepository
+	log     *logrus.Logger
 }
-
 
 func NewUserUsecase(user repository.UserRepository, log *logrus.Logger, storage storage.ObjectStorage) UserUsecaseContract {
 	return &UserUsecase{
-		user: user,
-		log:  log,
+		user:    user,
+		log:     log,
 		storage: storage,
 	}
 }
@@ -63,6 +62,7 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userRequest dto.UserReq
 	}
 
 	return dto.UserResponse{
+		ID:          updatedUser.ID,
 		ProfileUrl:  updatedUser.ProfileUrl,
 		Username:    updatedUser.Username,
 		FirstName:   updatedUser.FirstName,
@@ -93,6 +93,7 @@ func (u *UserUsecase) UpdateAvatar(ctx context.Context, fileData []byte, userId 
 	}
 
 	return dto.UserResponse{
+		ID:          updatedUser.ID,
 		ProfileUrl:  updatedUser.ProfileUrl,
 		Username:    updatedUser.Username,
 		FirstName:   updatedUser.FirstName,

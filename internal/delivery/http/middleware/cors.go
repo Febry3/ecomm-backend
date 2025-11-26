@@ -14,7 +14,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 
 		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent) // 204
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
