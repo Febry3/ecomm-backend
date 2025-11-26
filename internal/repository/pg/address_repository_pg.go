@@ -32,10 +32,10 @@ func (a *AddressProviderPg) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (a *AddressProviderPg) FindByUserID(ctx context.Context, id int64) (entity.Address, error) {
-	var address entity.Address
-	if err := a.db.First(&address, id).Error; err != nil {
-		return entity.Address{}, err
+func (a *AddressProviderPg) FindAll(ctx context.Context, userId int64) ([]entity.Address, error) {
+	var address []entity.Address
+	if err := a.db.Where("user_id = ?", userId).Find(&address).Error; err != nil {
+		return nil, err
 	}
 	return address, nil
 }

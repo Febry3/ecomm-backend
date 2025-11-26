@@ -9,6 +9,6 @@ import (
 type AddressRepository interface {
 	Create(ctx context.Context, address entity.Address) (entity.Address, error)
 	Update(ctx context.Context, address entity.Address) (entity.Address, error)
-	FindByUserID(ctx context.Context, id int64) (entity.Address, error)
+	FindAll(ctx context.Context, userId int64) ([]entity.Address, error)
 	Delete(ctx context.Context, id int64) error
 }
