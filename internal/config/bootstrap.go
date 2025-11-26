@@ -46,18 +46,22 @@ func Bootstrap(config *BootstrapConfig) {
 	userRepository := pg.NewUserRepositoryPg(config.DB, config.Log)
 	tokenRepository := pg.NewTokenRepositoryPg(config.DB, config.Log)
 	authProviderRepository := pg.NewAuthProvider(config.DB)
+	addressRepository := pg.NewAddressRepositoryPg(config.DB)
 
 	// setup usecase
 	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
 	userUsecase := usecase.NewUserUsecase(userRepository, config.Log, storage)
+	addressUsecase := usecase.NewAddressUsecase(addressRepository, userRepository, config.Log)
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
 	userHandler := http.NewUserHandler(userUsecase, config.Log)
+	addressHandler := http.NewAddressHandler(addressUsecase, userUsecase, config.Log)
 
 	routeConfig := http.RouteConfig{
-		App:  config.App,
-		Auth: *authHandler,
-		User: *userHandler,
+		App:     config.App,
+		Auth:    *authHandler,
+		User:    *userHandler,
+		Address: *addressHandler,
 	}
 
 	routeConfig.Init(jwt)

@@ -12,7 +12,7 @@ type AddressProviderPg struct {
 	db *gorm.DB
 }
 
-func NewAddressRepository(db *gorm.DB) repository.AddressRepository {
+func NewAddressRepositoryPg(db *gorm.DB) repository.AddressRepository {
 	return &AddressProviderPg{
 		db: db,
 	}
@@ -25,8 +25,8 @@ func (a *AddressProviderPg) Create(ctx context.Context, address entity.Address) 
 	return address, nil
 }
 
-func (a *AddressProviderPg) Delete(ctx context.Context, id int64) error {
-	if err := a.db.Delete(&entity.Address{}, id).Error; err != nil {
+func (a *AddressProviderPg) Delete(ctx context.Context, id string, userId int64) error {
+	if err := a.db.Delete(&entity.Address{}, "address_id = ? AND user_id = ?", id, userId).Error; err != nil {
 		return err
 	}
 	return nil
@@ -42,6 +42,14 @@ func (a *AddressProviderPg) FindAll(ctx context.Context, userId int64) ([]entity
 
 func (a *AddressProviderPg) Update(ctx context.Context, address entity.Address) (entity.Address, error) {
 	if err := a.db.Save(&address).Error; err != nil {
+		return entity.Address{}, err
+	}
+	return address, nil
+}
+
+func (a *AddressProviderPg) FindById(ctx context.Context, id string, userId int64) (entity.Address, error) {
+	var address entity.Address
+	if err := a.db.Where("address_id = ? AND user_id = ?", id, userId).First(&address).Error; err != nil {
 		return entity.Address{}, err
 	}
 	return address, nil

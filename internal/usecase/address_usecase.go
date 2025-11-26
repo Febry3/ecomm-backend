@@ -12,8 +12,8 @@ import (
 
 type AddressUsecaseContract interface {
 	Create(ctx context.Context, address dto.AddressRequest, userId int64) (entity.Address, error)
-	Update(ctx context.Context, address dto.AddressRequest, id int64) (entity.Address, error)
-	Delete(ctx context.Context, id int64) error
+	Update(ctx context.Context, address dto.AddressRequest, id string, userId int64) (entity.Address, error)
+	Delete(ctx context.Context, id string, userId int64) error
 	GetAll(ctx context.Context, userId int64) ([]entity.Address, error)
 }
 
@@ -47,9 +47,8 @@ func (a *AddressUsecase) Create(ctx context.Context, request dto.AddressRequest,
 		return entity.Address{}, err
 	}
 
-	request.UserID = user.ID
 	address, err := a.address.Create(ctx, entity.Address{
-		UserID:        request.UserID,
+		UserID:        user.ID,
 		StreetAddress: request.StreetAddress,
 		RT:            request.RT,
 		RW:            request.RW,
@@ -70,28 +69,22 @@ func (a *AddressUsecase) Create(ctx context.Context, request dto.AddressRequest,
 	return address, err
 }
 
-func (a *AddressUsecase) Delete(ctx context.Context, id int64) error {
-	return a.address.Delete(ctx, id)
+func (a *AddressUsecase) Delete(ctx context.Context, id string, userId int64) error {
+	return a.address.Delete(ctx, id, userId)
 }
 
-func (a *AddressUsecase) Update(ctx context.Context, request dto.AddressRequest, id int64) (entity.Address, error) {
-	address, err := a.address.Update(ctx, entity.Address{
-		UserID:        request.UserID,
-		StreetAddress: request.StreetAddress,
-		RT:            request.RT,
-		RW:            request.RW,
-		Village:       request.Village,
-		District:      request.District,
-		City:          request.City,
-		Province:      request.Province,
-		PostalCode:    request.PostalCode,
-		Notes:         request.Notes,
-	})
-
+func (a *AddressUsecase) Update(ctx context.Context, request dto.AddressRequest, id string, userId int64) (entity.Address, error) {
+	address, err := a.address.FindById(ctx, id, userId)
+	if err != nil {
+		a.log.Errorf("[AddressUsecase] Find Address Error: %v", err.Error())
+		return entity.Address{}, err
+	}
+	request.UpdateEntity(&address)
+	updatedAddress, err := a.address.Update(ctx, address)
 	if err != nil {
 		a.log.Errorf("[AddressUsecase] Update Address Error: %v", err.Error())
 		return entity.Address{}, err
 	}
 
-	return address, err
+	return updatedAddress, err
 }

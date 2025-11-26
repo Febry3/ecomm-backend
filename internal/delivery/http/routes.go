@@ -12,9 +12,10 @@ import (
 )
 
 type RouteConfig struct {
-	App  *gin.Engine
-	Auth AuthHandler
-	User UserHandler
+	App     *gin.Engine
+	Auth    AuthHandler
+	User    UserHandler
+	Address AddressHandler
 }
 
 func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
@@ -43,6 +44,10 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		protected.PUT("", routeConfig.User.UpdateUserProfile)
 		protected.GET("", routeConfig.User.GetUserProfile)
 		protected.POST("/avatar", routeConfig.User.UpdateUserAvatar)
+		protected.GET("/address", routeConfig.Address.GetAll)
+		protected.POST("/address", routeConfig.Address.Create)
+		protected.PUT("/address/:id", routeConfig.Address.Update)
+		protected.DELETE("/address/:id", routeConfig.Address.Delete)
 	}
 }
 

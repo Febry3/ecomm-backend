@@ -1,9 +1,12 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"github.com/febry3/gamingin/internal/entity"
+)
 
 type AddressRequest struct {
-	UserID        int64  `validate:"required" json:"user_id"`
 	StreetAddress string `validate:"required" json:"street_address"`
 	RT            string `validate:"required" json:"rt"`
 	RW            string `validate:"required" json:"rw"`
@@ -30,4 +33,34 @@ type AddressResponse struct {
 	IsDefault     bool      `json:"is_default"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+func (req *AddressRequest) UpdateEntity(a *entity.Address) {
+	if req.StreetAddress != "" {
+		a.StreetAddress = req.StreetAddress
+	}
+	if req.RT != "" {
+		a.RT = req.RT
+	}
+	if req.RW != "" {
+		a.RW = req.RW
+	}
+	if req.Village != "" {
+		a.Village = req.Village
+	}
+	if req.District != "" {
+		a.District = req.District
+	}
+	if req.City != "" {
+		a.City = req.City
+	}
+	if req.Province != "" {
+		a.Province = req.Province
+	}
+	if req.PostalCode != "" {
+		a.PostalCode = req.PostalCode
+	}
+	if req.Notes != "" {
+		a.Notes = req.Notes
+	}
 }
