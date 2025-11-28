@@ -7,6 +7,8 @@ import (
 )
 
 type AddressRequest struct {
+	ReceiverName  string `validate:"required" json:"receiver_name"`
+	AddressLabel  string `validate:"required" json:"address_label"`
 	StreetAddress string `validate:"required" json:"street_address"`
 	RT            string `validate:"required" json:"rt"`
 	RW            string `validate:"required" json:"rw"`
@@ -21,6 +23,8 @@ type AddressRequest struct {
 type AddressResponse struct {
 	AddressID     string    `json:"address_id"`
 	UserID        int64     `json:"user_id"`
+	AddressLabel  string    `json:"address_label"`
+	ReceiverName  string    `json:"receiver_name"`
 	StreetAddress string    `json:"street_address"`
 	RT            string    `json:"rt"`
 	RW            string    `json:"rw"`
@@ -36,6 +40,12 @@ type AddressResponse struct {
 }
 
 func (req *AddressRequest) UpdateEntity(a *entity.Address) {
+	if req.AddressLabel != "" {
+		a.AddressLabel = req.AddressLabel
+	}
+	if req.ReceiverName != "" {
+		a.ReceiverName = req.ReceiverName
+	}
 	if req.StreetAddress != "" {
 		a.StreetAddress = req.StreetAddress
 	}

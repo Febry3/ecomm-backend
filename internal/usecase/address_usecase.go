@@ -59,6 +59,8 @@ func (a *AddressUsecase) Create(ctx context.Context, request dto.AddressRequest,
 		PostalCode:    request.PostalCode,
 		Notes:         request.Notes,
 		IsDefault:     true,
+		AddressLabel:  request.AddressLabel,
+		ReceiverName:  request.ReceiverName,
 	})
 
 	if err != nil {

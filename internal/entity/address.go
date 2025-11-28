@@ -5,8 +5,10 @@ import (
 )
 
 type Address struct {
-	AddressID string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"address_id"`
-	UserID    int64  `gorm:"not null;index" json:"user_id"`
+	AddressID    string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"address_id"`
+	UserID       int64  `gorm:"not null;index" json:"user_id"`
+	AddressLabel string `gorm:"not null" json:"address_label"`
+	ReceiverName string `gorm:"not null" json:"receiver_name"`
 	// Physical Address
 	StreetAddress string `gorm:"type:text;not null" json:"street_address"` // Jalan + No Rumah
 	// RT/RW are optional (omitempty) because some cluster housing doesn't use them
