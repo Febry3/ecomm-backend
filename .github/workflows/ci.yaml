@@ -56,21 +56,21 @@ jobs:
           version: v1.60
 
   test:
-    name: Test & Build
+    name: Test & Build 
     runs-on: ubuntu-latest
     needs: [lint]
     strategy:
       fail-fast: false
       matrix:
-        go-version: ['1.23', '1.24']
+        go-version: ['1.24']
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Go ['1.23', '1.24']
+      - name: Setup Go 
         uses: actions/setup-go@v5
         with:
-          go-version: ['1.23', '1.24']
+          go-version: ${{ matrix.go-version }}
 
       - name: Install Dependencies
         run: go mod download
