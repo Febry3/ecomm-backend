@@ -25,7 +25,6 @@ func AuthMiddleware(jwt *helpers.JwtService) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid or expired token"})
 			return
 		}
-
 		c.Set("user", user)
 		c.Next()
 	}
