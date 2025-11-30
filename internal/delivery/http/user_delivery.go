@@ -1,10 +1,10 @@
 package http
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/febry3/gamingin/internal/dto"
+	"github.com/febry3/gamingin/internal/helpers"
 	"github.com/febry3/gamingin/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -50,6 +50,17 @@ func (uh *UserHandler) GetUserProfile(c *gin.Context) {
 }
 
 func (uh *UserHandler) UpdateUserProfile(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		uh.log.Error("[UserDelivery] No User in Context")
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "no user in context",
+			"error":   ok,
+		})
+		return
+	}
+	jwt := v.(*dto.JwtPayload)
+
 	var userRequest dto.UserRequest
 	if err := c.ShouldBindJSON(&userRequest); err != nil {
 		uh.log.Errorf("[UserDelivery] Bind Error: %s", err.Error())
@@ -59,6 +70,8 @@ func (uh *UserHandler) UpdateUserProfile(c *gin.Context) {
 		})
 		return
 	}
+
+	userRequest.UserID = jwt.ID
 
 	updatedUser, err := uh.uc.UpdateProfile(c.Request.Context(), userRequest)
 	if err != nil {
@@ -89,29 +102,10 @@ func (uh *UserHandler) UpdateUserAvatar(c *gin.Context) {
 	}
 	jwt := v.(*dto.JwtPayload)
 
-	fileHeader, err := c.FormFile("file")
+	fileBytes, err := helpers.GetFileFromContext(c, "file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "No file uploaded",
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	file, err := fileHeader.Open()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Unable to open file",
-			"error":   err.Error(),
-		})
-		return
-	}
-	defer file.Close()
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Unable to read file bytes",
+			"message": err.Error(),
 			"error":   err.Error(),
 		})
 		return
