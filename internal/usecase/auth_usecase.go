@@ -152,7 +152,6 @@ func (a *AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.
 		a.log.Errorf("[AuthUsecase] Failed to save refresh token: %v", err)
 		return dto.LoginResponse{}, "", err
 	}
-
 	return dto.LoginResponse{
 		ID:          user.ID,
 		Username:    user.Username,
@@ -161,6 +160,7 @@ func (a *AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.
 		PhoneNumber: user.PhoneNumber,
 		Email:       user.Email,
 		AccessToken: accessToken,
+		Role:        user.Role,
 	}, plainTextRefreshToken, nil
 }
 
@@ -271,6 +271,7 @@ func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto
 		Email:       user.Email,
 		AccessToken: accessToken,
 		ProfileUrl:  user.ProfileUrl,
+		Role:        user.Role,
 	}, plainTextRefreshToken, nil
 }
 

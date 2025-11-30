@@ -18,6 +18,7 @@ type UserResponse struct {
 	LastName    string `json:"last_name"`
 	PhoneNumber string `json:"phone_number"`
 	Email       string `json:"email"`
+	Role        string `json:"role"`
 	AccessToken string `json:"access_token"`
 	ProfileUrl  string `json:"profile_url"`
 }

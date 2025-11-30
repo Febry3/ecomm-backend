@@ -44,6 +44,7 @@ func (u *UserUsecase) GetProfile(ctx context.Context, userId int64) (dto.UserRes
 		Email:       user.Email,
 		ID:          user.ID,
 		ProfileUrl:  user.ProfileUrl,
+		Role:        user.Role,
 	}, nil
 }
 
@@ -68,6 +69,7 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userRequest dto.UserReq
 		FirstName:   updatedUser.FirstName,
 		LastName:    updatedUser.LastName,
 		PhoneNumber: updatedUser.PhoneNumber,
+		Role:        updatedUser.Role,
 	}, nil
 }
 
