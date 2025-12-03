@@ -1,0 +1,40 @@
+services:
+  backend:
+    build: .
+    container_name: gamingin-backend
+    ports:
+      - "${APP_PORT:-8080}:${APP_PORT:-8080}"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+    depends_on:
+      - postgres
+    restart: always
+    networks:
+      - gamingin-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: gamingin-postgres
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_DBNAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - gamingin-network
+
+networks:
+  gamingin-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
