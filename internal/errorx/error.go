@@ -13,4 +13,6 @@ var (
 	ErrTokenRevoked = errors.New("refresh token revoked")
 	ErrTokenExpired = errors.New("refresh token expired")
 	ErrParseToken   = errors.New("failed to parse token")
+
+	ErrSellerAlreadyExists = errors.New("seller already exists")
 )
