@@ -47,21 +47,26 @@ func Bootstrap(config *BootstrapConfig) {
 	tokenRepository := pg.NewTokenRepositoryPg(config.DB, config.Log)
 	authProviderRepository := pg.NewAuthProvider(config.DB)
 	addressRepository := pg.NewAddressRepositoryPg(config.DB)
+	sellerRepository := pg.NewSellerRepositoryPg(config.DB, config.Log)
 
 	// setup usecase
 	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
 	userUsecase := usecase.NewUserUsecase(userRepository, config.Log, storage)
 	addressUsecase := usecase.NewAddressUsecase(addressRepository, userRepository, config.Log)
+	sellerUsecase := usecase.NewSellerUsecase(sellerRepository, userRepository, config.Log)
+
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
 	userHandler := http.NewUserHandler(userUsecase, config.Log)
 	addressHandler := http.NewAddressHandler(addressUsecase, userUsecase, config.Log)
+	sellerHandler := http.NewSellerHandler(sellerUsecase, config.Log)
 
 	routeConfig := http.RouteConfig{
 		App:     config.App,
 		Auth:    *authHandler,
 		User:    *userHandler,
 		Address: *addressHandler,
+		Seller:  *sellerHandler,
 	}
 
 	routeConfig.Init(jwt)

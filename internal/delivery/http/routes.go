@@ -16,6 +16,7 @@ type RouteConfig struct {
 	Auth    AuthHandler
 	User    UserHandler
 	Address AddressHandler
+	Seller  SellerHandler
 }
 
 func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
@@ -48,6 +49,13 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		protected.POST("/address", routeConfig.Address.Create)
 		protected.PUT("/address/:id", routeConfig.Address.Update)
 		protected.DELETE("/address/:id", routeConfig.Address.Delete)
+	}
+
+	protectedSeller := v1.Group("/seller", middleware.AuthMiddleware(jwt))
+	{
+		protectedSeller.POST("", routeConfig.Seller.RegisterSeller)
+		protectedSeller.PUT("", routeConfig.Seller.UpdateSeller)
+		protectedSeller.GET("", routeConfig.Seller.GetSeller)
 	}
 }
 

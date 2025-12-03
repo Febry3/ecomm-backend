@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/entity"
@@ -9,6 +10,7 @@ import (
 	"github.com/febry3/gamingin/internal/repository"
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type SellerUsecaseContract interface {
@@ -37,13 +39,14 @@ func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRe
 		return &entity.Seller{}, err
 	}
 
-	if _, err := s.user.FindByID(ctx, userID); err != nil {
+	user, err := s.user.FindByID(ctx, userID)
+	if err != nil {
 		s.log.Errorf("[SellerUsecase] User not found")
 		return &entity.Seller{}, errorx.ErrUserNotFound
 	}
 
 	checkSeller, err := s.repo.GetSeller(ctx, userID)
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		s.log.Errorf("[SellerUsecase] Find seller error")
 		return &entity.Seller{}, err
 	}
@@ -54,6 +57,7 @@ func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRe
 	}
 
 	seller, err := s.repo.CreateSeller(ctx, &entity.Seller{
+		UserID:        userID,
 		StoreName:     request.StoreName,
 		StoreSlug:     request.StoreSlug,
 		Description:   request.Description,
@@ -65,6 +69,13 @@ func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRe
 	if err != nil {
 		s.log.Error("[SellerUsecase] Register Seller Error: ", err)
 		return nil, err
+	}
+
+	user.Role = "seller"
+	if _, err := s.user.Update(ctx, user); err != nil {
+		s.log.Errorf("[SellerUsecase] Failed to update user role: %v", err)
+		// Note: In a production app, you might want to rollback the seller creation here
+		// or use a transaction to ensure atomicity.
 	}
 
 	return seller, nil
