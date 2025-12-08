@@ -29,9 +29,18 @@ Based on the database schema, here is a week-by-week plan to implement the featu
     - CRUD for `Product` (Basic info).
     - CRUD for `ProductVariant` (SKU, Price).
     - `ProductImage` upload and management.
-- [ ] **Inventory**:
-    - Initialize `ProductVariantStock`.
-    - Implement `InventoryLedger` to track initial stock additions.
+- [ ] **Inventory System**:
+    - **Entities**:
+        - Update `ProductVariant` to has-one `ProductVariantStock`.
+        - Update `ProductVariantStock` to belong-to `ProductVariant`.
+    - **Repository**:
+        - Create `InventoryRepository` (GetStock, UpdateStock).
+        - Implement Transactional updates (Stock + Ledger).
+    - **Usecase**:
+        - `AddStock` (Restocking).
+        - `ReserveStock` (Order Placement).
+        - `ReleaseStock` (Order Cancellation).
+        - `DeductStock` (Order Fulfillment).
 
 ## Phase 3: Discovery & Shopping Core
 
