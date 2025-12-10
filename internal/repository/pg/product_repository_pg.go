@@ -16,17 +16,15 @@ func NewProductRepositoryPg(db *gorm.DB) repository.ProductRepository {
 	return &ProductRepositoryPg{db: db}
 }
 
-// CreateProduct implements repository.ProductRepository.
 func (p *ProductRepositoryPg) CreateProduct(ctx context.Context, product *entity.Product) error {
-	return p.db.WithContext(ctx).Create(product).Error
+	db := TxFromContext(ctx, p.db)
+	return db.Create(product).Error
 }
 
-// DeleteProduct implements repository.ProductRepository.
 func (p *ProductRepositoryPg) DeleteProduct(ctx context.Context, productID string) error {
 	return p.db.WithContext(ctx).Delete(&entity.Product{}, productID).Error
 }
 
-// GetProduct implements repository.ProductRepository.
 func (p *ProductRepositoryPg) GetProduct(ctx context.Context, productID string) (*entity.Product, error) {
 	var product entity.Product
 	err := p.db.WithContext(ctx).First(&product, productID).Error
@@ -36,7 +34,6 @@ func (p *ProductRepositoryPg) GetProduct(ctx context.Context, productID string) 
 	return &product, nil
 }
 
-// GetProducts implements repository.ProductRepository.
 func (p *ProductRepositoryPg) GetProducts(ctx context.Context) ([]entity.Product, error) {
 	var products []entity.Product
 	err := p.db.WithContext(ctx).Find(&products).Error

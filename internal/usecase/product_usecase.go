@@ -1,0 +1,114 @@
+package usecase
+
+import (
+	"context"
+
+	"github.com/febry3/gamingin/internal/dto"
+	"github.com/febry3/gamingin/internal/entity"
+	"github.com/febry3/gamingin/internal/repository"
+	"github.com/go-playground/validator/v10"
+	"github.com/sirupsen/logrus"
+)
+
+type ProductUsecaseContract interface {
+	CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64) (*entity.Product, error)
+}
+
+type ProductUsecase struct {
+	productRepo repository.ProductRepository
+	variantRepo repository.ProductVariantRepository
+	stockRepo   repository.ProductVariantStockRepository
+	tx          repository.TxManager
+	log         *logrus.Logger
+}
+
+func NewProductUsecase(
+	productRepo repository.ProductRepository,
+	variantRepo repository.ProductVariantRepository,
+	stockRepo repository.ProductVariantStockRepository,
+	tx repository.TxManager,
+	log *logrus.Logger,
+) ProductUsecaseContract {
+	return &ProductUsecase{
+		productRepo: productRepo,
+		variantRepo: variantRepo,
+		stockRepo:   stockRepo,
+		tx:          tx,
+		log:         log,
+	}
+}
+
+func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64) (*entity.Product, error) {
+	// Validate request
+	if err := validator.New().Struct(request); err != nil {
+		p.log.Errorf("[ProductUsecase] Validate Product Error: %v", err.Error())
+		return nil, err
+	}
+
+	// Prepare product entity
+	product := &entity.Product{
+		SellerID:    sellerID,
+		Title:       request.Title,
+		Slug:        request.Slug,
+		Description: request.Description,
+		CategoryID:  request.CategoryID,
+		Badge:       request.Badge,
+		IsActive:    request.IsActive,
+	}
+
+	// Use transaction to insert into 3 tables atomically
+	err := p.tx.WithTransaction(ctx, func(txCtx context.Context) error {
+		// 1. Create Product
+		if err := p.productRepo.CreateProduct(txCtx, product); err != nil {
+			p.log.Errorf("[ProductUsecase] Create Product Error: %v", err)
+			return err
+		}
+
+		// 2. Create Variants + 3. Create Stock for each variant
+		for _, v := range request.Variants {
+			variant := &entity.ProductVariant{
+				ProductID: product.ID,
+				Sku:       v.Sku,
+				Name:      v.Name,
+				Price:     v.Price,
+				IsActive:  v.IsActive,
+			}
+
+			if err := p.variantRepo.CreateProductVariant(txCtx, variant); err != nil {
+				p.log.Errorf("[ProductUsecase] Create Variant Error (SKU: %s): %v", v.Sku, err)
+				return err
+			}
+
+			// Create stock for this variant
+			stock := &entity.ProductVariantStock{
+				ProductVariantID:  variant.ID,
+				CurrentStock:      0,
+				ReservedStock:     0,
+				LowStockThreshold: 5,
+			}
+
+			// If stock info provided in request, use it
+			if v.Stock != nil {
+				stock.CurrentStock = v.Stock.CurrentStock
+				stock.ReservedStock = v.Stock.ReservedStock
+				if v.Stock.LowStockThreshold > 0 {
+					stock.LowStockThreshold = v.Stock.LowStockThreshold
+				}
+			}
+
+			if err := p.stockRepo.CreateStock(txCtx, stock); err != nil {
+				p.log.Errorf("[ProductUsecase] Create Stock Error (Variant: %s): %v", variant.ID, err)
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		p.log.Errorf("[ProductUsecase] CreateProduct transaction failed: %v", err)
+		return nil, err
+	}
+
+	return product, nil
+}

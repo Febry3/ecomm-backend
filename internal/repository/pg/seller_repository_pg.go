@@ -28,9 +28,9 @@ func (s *SellerRepositoryPg) CreateSeller(ctx context.Context, seller *entity.Se
 	return seller, nil
 }
 
-func (s *SellerRepositoryPg) GetSeller(ctx context.Context, sellerID int64) (*entity.Seller, error) {
+func (s *SellerRepositoryPg) GetSeller(ctx context.Context, userID int64) (*entity.Seller, error) {
 	var seller entity.Seller
-	result := s.db.Where("seller_id = ?", sellerID).First(&seller)
+	result := s.db.Where("user_id = ?", userID).First(&seller)
 
 	if result.Error != nil {
 		s.log.Errorf("[SellerRepositoryPg] Get Seller Error: %v", result.Error)

@@ -16,17 +16,15 @@ func NewProductVariantRepositoryPg(db *gorm.DB) repository.ProductVariantReposit
 	return &ProductVariantRepository{db: db}
 }
 
-// CreateProductVariant implements repository.ProductVariantRepository.
 func (p *ProductVariantRepository) CreateProductVariant(ctx context.Context, productVariant *entity.ProductVariant) error {
-	return p.db.WithContext(ctx).Create(productVariant).Error
+	db := TxFromContext(ctx, p.db)
+	return db.Create(productVariant).Error
 }
 
-// DeleteProductVariant implements repository.ProductVariantRepository.
 func (p *ProductVariantRepository) DeleteProductVariant(ctx context.Context, productVariantID string) error {
 	return p.db.WithContext(ctx).Delete(&entity.ProductVariant{}, productVariantID).Error
 }
 
-// GetProductVariant implements repository.ProductVariantRepository.
 func (p *ProductVariantRepository) GetProductVariant(ctx context.Context, productVariantID string) (*entity.ProductVariant, error) {
 	var productVariant entity.ProductVariant
 	err := p.db.WithContext(ctx).First(&productVariant, productVariantID).Error
@@ -36,7 +34,6 @@ func (p *ProductVariantRepository) GetProductVariant(ctx context.Context, produc
 	return &productVariant, nil
 }
 
-// GetProductVariants implements repository.ProductVariantRepository.
 func (p *ProductVariantRepository) GetProductVariants(ctx context.Context) ([]entity.ProductVariant, error) {
 	var productVariants []entity.ProductVariant
 	err := p.db.WithContext(ctx).Find(&productVariants).Error
@@ -46,7 +43,6 @@ func (p *ProductVariantRepository) GetProductVariants(ctx context.Context) ([]en
 	return productVariants, nil
 }
 
-// UpdateProductVariant implements repository.ProductVariantRepository.
 func (p *ProductVariantRepository) UpdateProductVariant(ctx context.Context, productVariant *entity.ProductVariant, productVariantID string) error {
 	return p.db.WithContext(ctx).Save(productVariant).Error
 }

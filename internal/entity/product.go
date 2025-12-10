@@ -8,7 +8,7 @@ type Product struct {
 	Title       string    `json:"title" gorm:"not null"`
 	Slug        string    `json:"slug" gorm:"not null;uniqueIndex"`
 	Description string    `json:"description" gorm:"type:text"`
-	CategoryID  string    `json:"category_id" gorm:"type:uuid;not null"`
+	CategoryID  string    `json:"category_id" gorm:"type:uuid"` // commented the not null
 	Badge       string    `json:"badge"`
 	IsActive    bool      `json:"is_active" gorm:"default:true"`
 	Status      string    `json:"status" gorm:"default:pending;check:status IN ('pending','approved','rejected')"`
