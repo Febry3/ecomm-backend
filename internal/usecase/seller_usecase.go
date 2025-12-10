@@ -22,13 +22,15 @@ type SellerUsecaseContract interface {
 type SellerUsecase struct {
 	repo repository.SellerRepository
 	user repository.UserRepository
+	tx   repository.TxManager
 	log  *logrus.Logger
 }
 
-func NewSellerUsecase(repo repository.SellerRepository, user repository.UserRepository, log *logrus.Logger) SellerUsecaseContract {
+func NewSellerUsecase(repo repository.SellerRepository, user repository.UserRepository, tx repository.TxManager, log *logrus.Logger) SellerUsecaseContract {
 	return &SellerUsecase{
 		repo: repo,
 		user: user,
+		tx:   tx,
 		log:  log,
 	}
 }
@@ -56,26 +58,37 @@ func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRe
 		return &entity.Seller{}, errorx.ErrSellerAlreadyExists
 	}
 
-	seller, err := s.repo.CreateSeller(ctx, &entity.Seller{
-		UserID:        userID,
-		StoreName:     request.StoreName,
-		StoreSlug:     request.StoreSlug,
-		Description:   request.Description,
-		LogoURL:       request.LogoURL,
-		BusinessEmail: request.BusinessEmail,
-		BusinessPhone: request.BusinessPhone,
+	var seller *entity.Seller
+
+	// Use transaction to ensure atomicity - both seller creation and role update must succeed
+	err = s.tx.WithTransaction(ctx, func(txCtx context.Context) error {
+		var txErr error
+		seller, txErr = s.repo.CreateSeller(txCtx, &entity.Seller{
+			UserID:        userID,
+			StoreName:     request.StoreName,
+			StoreSlug:     request.StoreSlug,
+			Description:   request.Description,
+			LogoURL:       request.LogoURL,
+			BusinessEmail: request.BusinessEmail,
+			BusinessPhone: request.BusinessPhone,
+		})
+		if txErr != nil {
+			s.log.Error("[SellerUsecase] Create Seller Error: ", txErr)
+			return txErr
+		}
+
+		user.Role = "seller"
+		if _, txErr = s.user.Update(txCtx, user); txErr != nil {
+			s.log.Errorf("[SellerUsecase] Failed to update user role: %v", txErr)
+			return txErr
+		}
+
+		return nil
 	})
 
 	if err != nil {
-		s.log.Error("[SellerUsecase] Register Seller Error: ", err)
+		s.log.Error("[SellerUsecase] RegisterSeller transaction failed: ", err)
 		return nil, err
-	}
-
-	user.Role = "seller"
-	if _, err := s.user.Update(ctx, user); err != nil {
-		s.log.Errorf("[SellerUsecase] Failed to update user role: %v", err)
-		// Note: In a production app, you might want to rollback the seller creation here
-		// or use a transaction to ensure atomicity.
 	}
 
 	return seller, nil

@@ -33,7 +33,7 @@ func NewUserUsecase(user repository.UserRepository, log *logrus.Logger, storage 
 func (u *UserUsecase) GetProfile(ctx context.Context, userId int64) (dto.UserResponse, error) {
 	user, err := u.user.FindByID(ctx, userId)
 	if err != nil {
-		u.log.Error("")
+		u.log.Error("[UserUsecase] FindByID Error", err.Error())
 		return dto.UserResponse{}, err
 	}
 	return dto.UserResponse{

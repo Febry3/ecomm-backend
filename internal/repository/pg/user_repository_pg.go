@@ -52,7 +52,8 @@ func (u UserRepositoryPg) FindByEmail(ctx context.Context, email string) (entity
 
 func (u UserRepositoryPg) Update(ctx context.Context, user entity.User) (entity.User, error) {
 	u.log.Debug("[UserRepositoryPg] Update User", user)
-	result := u.db.WithContext(ctx).Save(&user)
+	db := TxFromContext(ctx, u.db)
+	result := db.Save(&user)
 
 	if result.Error != nil {
 		u.log.Errorf("[UserRepositoryPg] Update User Error: %v]", result.Error.Error())

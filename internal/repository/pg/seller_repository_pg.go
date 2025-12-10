@@ -19,7 +19,8 @@ func NewSellerRepositoryPg(db *gorm.DB, log *logrus.Logger) repository.SellerRep
 }
 
 func (s *SellerRepositoryPg) CreateSeller(ctx context.Context, seller *entity.Seller) (*entity.Seller, error) {
-	result := s.db.Create(&seller)
+	db := TxFromContext(ctx, s.db)
+	result := db.Create(&seller)
 	if result.Error != nil {
 		s.log.Errorf("[SellerRepositoryPg] Create Seller Error: %v", result.Error)
 		return nil, result.Error
@@ -29,7 +30,8 @@ func (s *SellerRepositoryPg) CreateSeller(ctx context.Context, seller *entity.Se
 
 func (s *SellerRepositoryPg) GetSeller(ctx context.Context, sellerID int64) (*entity.Seller, error) {
 	var seller entity.Seller
-	result := s.db.First(&seller, sellerID)
+	result := s.db.Where("seller_id = ?", sellerID).First(&seller)
+
 	if result.Error != nil {
 		s.log.Errorf("[SellerRepositoryPg] Get Seller Error: %v", result.Error)
 		return nil, result.Error

@@ -101,6 +101,7 @@ func (a *AuthHandler) RefreshToken(c *gin.Context) {
 				"message": "token expired",
 				"error":   err.Error(),
 			})
+			return
 		}
 		a.log.Errorf("[AuthDelivery] Refresh Token Error: %s", err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{

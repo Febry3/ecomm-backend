@@ -17,8 +17,12 @@ func AuthMiddleware(jwt *helpers.JwtService) gin.HandlerFunc {
 			return
 		}
 
-		tokenString := strings.Split(authHeader, "Bearer ")[1]
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid authorization format"})
+			return
+		}
 
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		user, err := jwt.VerifyToken(tokenString)
 
 		if err != nil {

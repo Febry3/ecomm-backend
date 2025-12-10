@@ -48,12 +48,13 @@ func Bootstrap(config *BootstrapConfig) {
 	authProviderRepository := pg.NewAuthProvider(config.DB)
 	addressRepository := pg.NewAddressRepositoryPg(config.DB)
 	sellerRepository := pg.NewSellerRepositoryPg(config.DB, config.Log)
+	txManager := pg.NewTxManager(config.DB)
 
 	// setup usecase
 	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
 	userUsecase := usecase.NewUserUsecase(userRepository, config.Log, storage)
 	addressUsecase := usecase.NewAddressUsecase(addressRepository, userRepository, config.Log)
-	sellerUsecase := usecase.NewSellerUsecase(sellerRepository, userRepository, config.Log)
+	sellerUsecase := usecase.NewSellerUsecase(sellerRepository, userRepository, txManager, config.Log)
 
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
