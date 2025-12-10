@@ -17,6 +17,7 @@ type RouteConfig struct {
 	User    UserHandler
 	Address AddressHandler
 	Seller  SellerHandler
+	Product ProductHandler
 }
 
 func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
@@ -56,6 +57,9 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		protectedSeller.POST("", routeConfig.Seller.RegisterSeller)
 		protectedSeller.PUT("", routeConfig.Seller.UpdateSeller)
 		protectedSeller.GET("", routeConfig.Seller.GetSeller)
+
+		// Product routes (seller only)
+		protectedSeller.POST("/products", routeConfig.Product.CreateProduct)
 	}
 }
 

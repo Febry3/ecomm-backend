@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/febry3/gamingin/internal/dto"
+	"github.com/febry3/gamingin/internal/entity"
 	"github.com/febry3/gamingin/internal/infra/storage"
 	"github.com/febry3/gamingin/internal/repository"
 	"github.com/google/uuid"
@@ -19,14 +20,16 @@ type UserUsecaseContract interface {
 type UserUsecase struct {
 	storage storage.ObjectStorage
 	user    repository.UserRepository
+	seller  repository.SellerRepository
 	log     *logrus.Logger
 }
 
-func NewUserUsecase(user repository.UserRepository, log *logrus.Logger, storage storage.ObjectStorage) UserUsecaseContract {
+func NewUserUsecase(user repository.UserRepository, log *logrus.Logger, storage storage.ObjectStorage, seller repository.SellerRepository) UserUsecaseContract {
 	return &UserUsecase{
 		user:    user,
 		log:     log,
 		storage: storage,
+		seller:  seller,
 	}
 }
 
@@ -35,6 +38,15 @@ func (u *UserUsecase) GetProfile(ctx context.Context, userId int64) (dto.UserRes
 	if err != nil {
 		u.log.Error("[UserUsecase] FindByID Error", err.Error())
 		return dto.UserResponse{}, err
+	}
+
+	var seller *entity.Seller
+	if user.Role == "seller" {
+		seller, _ = u.seller.GetSeller(ctx, user.ID)
+	}
+
+	if seller == nil {
+		seller = &entity.Seller{ID: 0}
 	}
 	return dto.UserResponse{
 		Username:    user.Username,
@@ -45,6 +57,7 @@ func (u *UserUsecase) GetProfile(ctx context.Context, userId int64) (dto.UserRes
 		ID:          user.ID,
 		ProfileUrl:  user.ProfileUrl,
 		Role:        user.Role,
+		SellerID:    seller.ID,
 	}, nil
 }
 

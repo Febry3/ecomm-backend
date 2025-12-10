@@ -48,19 +48,24 @@ func Bootstrap(config *BootstrapConfig) {
 	authProviderRepository := pg.NewAuthProvider(config.DB)
 	addressRepository := pg.NewAddressRepositoryPg(config.DB)
 	sellerRepository := pg.NewSellerRepositoryPg(config.DB, config.Log)
+	productRepository := pg.NewProductRepositoryPg(config.DB)
+	variantRepository := pg.NewProductVariantRepositoryPg(config.DB)
+	stockRepository := pg.NewProductVariantStockRepositoryPg(config.DB)
 	txManager := pg.NewTxManager(config.DB)
 
 	// setup usecase
-	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository)
-	userUsecase := usecase.NewUserUsecase(userRepository, config.Log, storage)
+	authUsecase := usecase.NewAuthUsecase(userRepository, config.Log, *jwt, tokenRepository, authProviderRepository, sellerRepository)
+	userUsecase := usecase.NewUserUsecase(userRepository, config.Log, storage, sellerRepository)
 	addressUsecase := usecase.NewAddressUsecase(addressRepository, userRepository, config.Log)
 	sellerUsecase := usecase.NewSellerUsecase(sellerRepository, userRepository, txManager, config.Log)
+	productUsecase := usecase.NewProductUsecase(productRepository, variantRepository, stockRepository, txManager, config.Log)
 
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
 	userHandler := http.NewUserHandler(userUsecase, config.Log)
 	addressHandler := http.NewAddressHandler(addressUsecase, userUsecase, config.Log)
 	sellerHandler := http.NewSellerHandler(sellerUsecase, config.Log)
+	productHandler := http.NewProductHandler(productUsecase, config.Log)
 
 	routeConfig := http.RouteConfig{
 		App:     config.App,
@@ -68,6 +73,7 @@ func Bootstrap(config *BootstrapConfig) {
 		User:    *userHandler,
 		Address: *addressHandler,
 		Seller:  *sellerHandler,
+		Product: *productHandler,
 	}
 
 	routeConfig.Init(jwt)

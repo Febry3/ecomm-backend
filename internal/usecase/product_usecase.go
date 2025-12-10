@@ -58,13 +58,13 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 
 	// Use transaction to insert into 3 tables atomically
 	err := p.tx.WithTransaction(ctx, func(txCtx context.Context) error {
-		// 1. Create Product
+		// Create Product
 		if err := p.productRepo.CreateProduct(txCtx, product); err != nil {
 			p.log.Errorf("[ProductUsecase] Create Product Error: %v", err)
 			return err
 		}
 
-		// 2. Create Variants + 3. Create Stock for each variant
+		// Create Variants and Create Stock for each variant
 		for _, v := range request.Variants {
 			variant := &entity.ProductVariant{
 				ProductID: product.ID,

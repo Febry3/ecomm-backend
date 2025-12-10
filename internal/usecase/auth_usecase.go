@@ -29,17 +29,19 @@ type AuthUsecase struct {
 	token        repository.TokenRepository
 	user         repository.UserRepository
 	authProvider repository.AuthProviderRepository
+	seller       repository.SellerRepository
 	log          *logrus.Logger
 	jwt          helpers.JwtService
 }
 
-func NewAuthUsecase(user repository.UserRepository, log *logrus.Logger, jwt helpers.JwtService, token repository.TokenRepository, authProvider repository.AuthProviderRepository) AuthUsecaseContract {
+func NewAuthUsecase(user repository.UserRepository, log *logrus.Logger, jwt helpers.JwtService, token repository.TokenRepository, authProvider repository.AuthProviderRepository, seller repository.SellerRepository) AuthUsecaseContract {
 	return &AuthUsecase{
 		token:        token,
 		user:         user,
 		log:          log,
 		jwt:          jwt,
 		authProvider: authProvider,
+		seller:       seller,
 	}
 }
 
@@ -128,11 +130,21 @@ func (a *AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.
 		return dto.LoginResponse{}, "", errorx.ErrInvalidCredentials
 	}
 
+	var seller *entity.Seller
+	if user.Role == "seller" {
+		seller, _ = a.seller.GetSeller(ctx, user.ID)
+	}
+
+	if seller == nil {
+		seller = &entity.Seller{ID: 0}
+	}
+
 	accessToken := a.jwt.IssueAccessToken(dto.JwtPayload{
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
 		Role:     user.Role,
+		SellerID: seller.ID,
 	})
 
 	plainTextRefreshToken := uuid.New().String()
@@ -161,6 +173,7 @@ func (a *AuthUsecase) Login(ctx context.Context, request dto.LoginRequest) (dto.
 		Email:       user.Email,
 		AccessToken: accessToken,
 		Role:        user.Role,
+		SellerID:    seller.ID,
 	}, plainTextRefreshToken, nil
 }
 
@@ -237,11 +250,21 @@ func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto
 		}
 	}
 
+	var seller *entity.Seller
+	if user.Role == "seller" {
+		seller, _ = a.seller.GetSeller(ctx, user.ID)
+	}
+
+	if seller == nil {
+		seller = &entity.Seller{ID: 0}
+	}
+
 	accessToken := a.jwt.IssueAccessToken(dto.JwtPayload{
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
 		Role:     user.Role,
+		SellerID: seller.ID,
 	})
 
 	plainTextRefreshToken := uuid.New().String()
@@ -272,6 +295,7 @@ func (a *AuthUsecase) LoginOrRegisterWithGoogle(ctx context.Context, request dto
 		AccessToken: accessToken,
 		ProfileUrl:  user.ProfileUrl,
 		Role:        user.Role,
+		SellerID:    seller.ID,
 	}, plainTextRefreshToken, nil
 }
 

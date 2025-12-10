@@ -21,6 +21,7 @@ type UserResponse struct {
 	Role        string `json:"role"`
 	AccessToken string `json:"access_token"`
 	ProfileUrl  string `json:"profile_url"`
+	SellerID    int64  `json:"seller_id"`
 }
 
 func (req *UserRequest) UpdateEntity(u *entity.User) {

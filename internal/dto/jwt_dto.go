@@ -7,5 +7,6 @@ type JwtPayload struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Role     string `json:"role"`
+	SellerID int64  `json:"seller_id"`
 	jwt.RegisteredClaims
 }

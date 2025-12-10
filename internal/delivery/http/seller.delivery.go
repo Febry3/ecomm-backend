@@ -46,6 +46,7 @@ func (sd *SellerHandler) RegisterSeller(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	sd.log.Info("[SellerDelivery] Register Seller Success", seller)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,

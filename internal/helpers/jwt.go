@@ -29,12 +29,13 @@ func NewJwtService(config JwtConfig, log *logrus.Logger) *JwtService {
 func (j *JwtService) IssueAccessToken(payload dto.JwtPayload) string {
 	now := time.Now().UTC()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": payload.Username,
-		"email":    payload.Email,
-		"user_id":  payload.ID,
-		"role":     payload.Role,
-		"exp":      jwt.NewNumericDate(now.Add(j.Config.AccessTTL)),
-		"iat":      jwt.NewNumericDate(now),
+		"username":  payload.Username,
+		"email":     payload.Email,
+		"user_id":   payload.ID,
+		"role":      payload.Role,
+		"seller_id": payload.SellerID,
+		"exp":       jwt.NewNumericDate(now.Add(j.Config.AccessTTL)),
+		"iat":       jwt.NewNumericDate(now),
 	})
 
 	signedToken, err := token.SignedString([]byte(j.Config.Secret))

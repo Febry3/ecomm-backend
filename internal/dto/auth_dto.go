@@ -34,6 +34,7 @@ type LoginResponse struct {
 	Role        string `json:"role"`
 	AccessToken string `json:"access_token"`
 	ProfileUrl  string `json:"profile_url"`
+	SellerID    int64  `json:"seller_id"`
 }
 
 type LoginWithGoogleRequest struct {
