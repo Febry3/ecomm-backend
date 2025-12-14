@@ -7,35 +7,39 @@ import (
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/entity"
 	"github.com/febry3/gamingin/internal/errorx"
+	"github.com/febry3/gamingin/internal/infra/storage"
 	"github.com/febry3/gamingin/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type SellerUsecaseContract interface {
-	RegisterSeller(ctx context.Context, req dto.SellerRequest, userID int64) (*entity.Seller, error)
-	UpdateSeller(ctx context.Context, req dto.SellerRequest, userID int64) (*entity.Seller, error)
+	RegisterSeller(ctx context.Context, req dto.SellerRequest, userID int64, fileData []byte) (*entity.Seller, error)
+	UpdateSeller(ctx context.Context, req dto.UpdateSellerRequest, userID int64, fileData []byte) (*entity.Seller, error)
 	GetSeller(ctx context.Context, userID int64) (*entity.Seller, error)
 }
 
 type SellerUsecase struct {
-	repo repository.SellerRepository
-	user repository.UserRepository
-	tx   repository.TxManager
-	log  *logrus.Logger
+	repo    repository.SellerRepository
+	user    repository.UserRepository
+	tx      repository.TxManager
+	storage storage.ObjectStorage
+	log     *logrus.Logger
 }
 
-func NewSellerUsecase(repo repository.SellerRepository, user repository.UserRepository, tx repository.TxManager, log *logrus.Logger) SellerUsecaseContract {
+func NewSellerUsecase(repo repository.SellerRepository, user repository.UserRepository, tx repository.TxManager, log *logrus.Logger, storage storage.ObjectStorage) SellerUsecaseContract {
 	return &SellerUsecase{
-		repo: repo,
-		user: user,
-		tx:   tx,
-		log:  log,
+		repo:    repo,
+		user:    user,
+		tx:      tx,
+		log:     log,
+		storage: storage,
 	}
 }
 
-func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRequest, userID int64) (*entity.Seller, error) {
+func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRequest, userID int64, fileData []byte) (*entity.Seller, error) {
 	if err := validator.New().Struct(request); err != nil {
 		s.log.Errorf("[SellerUsecase] Validate Seller Error: %v", err.Error())
 		return &entity.Seller{}, err
@@ -58,6 +62,16 @@ func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRe
 		return &entity.Seller{}, errorx.ErrSellerAlreadyExists
 	}
 
+	var logoURL string
+	if fileData != nil {
+		fileName := uuid.New().String()
+		logoURL, err = s.storage.Upload(ctx, fileName, fileData, "store_logo")
+		if err != nil {
+			s.log.Errorf("[SellerUsecase] Upload logo error: %v", err.Error())
+			return &entity.Seller{}, err
+		}
+	}
+
 	var seller *entity.Seller
 
 	// Use transaction to ensure atomicity - both seller creation and role update must succeed
@@ -68,7 +82,7 @@ func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRe
 			StoreName:     request.StoreName,
 			StoreSlug:     request.StoreSlug,
 			Description:   request.Description,
-			LogoURL:       request.LogoURL,
+			LogoURL:       logoURL,
 			BusinessEmail: request.BusinessEmail,
 			BusinessPhone: request.BusinessPhone,
 		})
@@ -94,20 +108,34 @@ func (s *SellerUsecase) RegisterSeller(ctx context.Context, request dto.SellerRe
 	return seller, nil
 }
 
-func (s *SellerUsecase) UpdateSeller(ctx context.Context, req dto.SellerRequest, userID int64) (*entity.Seller, error) {
+func (s *SellerUsecase) UpdateSeller(ctx context.Context, req dto.UpdateSellerRequest, userID int64, fileData []byte) (*entity.Seller, error) {
 	if err := validator.New().Struct(req); err != nil {
 		s.log.Errorf("[SellerUsecase] Validate Seller Error: %v", err.Error())
 		return &entity.Seller{}, err
 	}
 
-	return s.repo.UpdateSeller(ctx, &entity.Seller{
-		StoreName:     req.StoreName,
-		StoreSlug:     req.StoreSlug,
-		Description:   req.Description,
-		LogoURL:       req.LogoURL,
-		BusinessEmail: req.BusinessEmail,
-		BusinessPhone: req.BusinessPhone,
-	})
+	existingSeller, err := s.repo.GetSeller(ctx, userID)
+	if err != nil {
+		s.log.Errorf("[SellerUsecase] Get Seller Error: %v", err.Error())
+		return &entity.Seller{}, err
+	}
+
+	if fileData != nil {
+		fileName := uuid.New().String()
+		logoURL, err := s.storage.Upload(ctx, fileName, fileData, "store_logo")
+		if err != nil {
+			s.log.Errorf("[SellerUsecase] Upload logo error: %v", err.Error())
+			return &entity.Seller{}, err
+		}
+		existingSeller.LogoURL = logoURL
+	}
+
+	existingSeller.StoreName = req.StoreName
+	existingSeller.Description = req.Description
+	existingSeller.BusinessEmail = req.BusinessEmail
+	existingSeller.BusinessPhone = req.BusinessPhone
+
+	return s.repo.UpdateSeller(ctx, existingSeller)
 }
 
 func (s *SellerUsecase) GetSeller(ctx context.Context, userID int64) (*entity.Seller, error) {

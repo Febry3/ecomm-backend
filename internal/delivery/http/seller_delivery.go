@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/febry3/gamingin/internal/dto"
+	"github.com/febry3/gamingin/internal/helpers"
 	"github.com/febry3/gamingin/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -22,6 +23,7 @@ func NewSellerHandler(sc usecase.SellerUsecaseContract, log *logrus.Logger) *Sel
 }
 
 func (sd *SellerHandler) RegisterSeller(c *gin.Context) {
+	sd.log.Debug("[SellerDelivery] Register Seller", c.Request.Body)
 	v, ok := c.Get("user")
 	if !ok {
 		sd.log.Error("[UserDelivery] No User in Context")
@@ -34,13 +36,14 @@ func (sd *SellerHandler) RegisterSeller(c *gin.Context) {
 	jwt := v.(*dto.JwtPayload)
 
 	var req dto.SellerRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		sd.log.Errorf("[SellerDelivery] Bind JSON Error: %v", err.Error())
+	if err := c.ShouldBind(&req); err != nil {
+		sd.log.Errorf("[SellerDelivery] Bind Error: %v", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	seller, err := sd.sc.RegisterSeller(c.Request.Context(), req, jwt.ID)
+	fileBytes, _ := helpers.GetFileFromContext(c, "logo")
+	seller, err := sd.sc.RegisterSeller(c.Request.Context(), req, jwt.ID, fileBytes)
 	if err != nil {
 		sd.log.Errorf("[SellerDelivery] Register Seller Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -67,14 +70,15 @@ func (sd *SellerHandler) UpdateSeller(c *gin.Context) {
 	}
 	jwt := v.(*dto.JwtPayload)
 
-	var req dto.SellerRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var req dto.UpdateSellerRequest
+	if err := c.ShouldBind(&req); err != nil {
 		sd.log.Errorf("[SellerDelivery] Bind JSON Error: %v", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	seller, err := sd.sc.UpdateSeller(c.Request.Context(), req, jwt.ID)
+	fileBytes, _ := helpers.GetFileFromContext(c, "logo")
+	seller, err := sd.sc.UpdateSeller(c.Request.Context(), req, jwt.ID, fileBytes)
 	if err != nil {
 		sd.log.Errorf("[SellerDelivery] Update Seller Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
