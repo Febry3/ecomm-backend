@@ -62,6 +62,7 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		protectedSeller.POST("/products", routeConfig.Product.CreateProduct)
 		protectedSeller.GET("/products", routeConfig.Product.GetAllProductsForSeller)
 		protectedSeller.GET("/products/:id", routeConfig.Product.GetProductForSeller)
+		protectedSeller.PUT("/products/:id", routeConfig.Product.UpdateProduct)
 	}
 }
 

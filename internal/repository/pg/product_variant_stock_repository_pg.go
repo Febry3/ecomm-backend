@@ -21,9 +21,9 @@ func (r *ProductVariantStockRepositoryPg) CreateStock(ctx context.Context, stock
 	return db.Create(stock).Error
 }
 
-func (r *ProductVariantStockRepositoryPg) UpdateStock(ctx context.Context, stock *entity.ProductVariantStock) error {
+func (r *ProductVariantStockRepositoryPg) UpdateStock(ctx context.Context, stock *entity.ProductVariantStock, variantID string) error {
 	db := TxFromContext(ctx, r.db)
-	return db.Save(stock).Error
+	return db.Model(&entity.ProductVariantStock{}).Where("product_variant_id = ?", variantID).Updates(stock).Error
 }
 
 func (r *ProductVariantStockRepositoryPg) GetStockByVariantID(ctx context.Context, variantID string) (*entity.ProductVariantStock, error) {

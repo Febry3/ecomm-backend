@@ -128,3 +128,42 @@ func (ph *ProductHandler) GetProductForSeller(c *gin.Context) {
 		"data":    product,
 	})
 }
+
+func (ph *ProductHandler) UpdateProduct(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		ph.log.Error("[ProductDelivery] No User in Context")
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized",
+		})
+		return
+	}
+	jwt := v.(*dto.JwtPayload)
+
+	var req dto.UpdateProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ph.log.Errorf("[ProductDelivery] Bind JSON Error: %v", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	product, err := ph.pr.UpdateProduct(c.Request.Context(), req, c.Param("id"), jwt.SellerID)
+	if err != nil {
+		ph.log.Errorf("[ProductDelivery] Update Product Error: %v", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "product updated successfully",
+		"data":    product,
+	})
+}

@@ -33,16 +33,6 @@ type ProductVariantStockRequest struct {
 	LowStockThreshold int `json:"low_stock_threshold"`
 }
 
-// UpdateProductRequest for updating product details
-type UpdateProductRequest struct {
-	Title       string          `json:"title"`
-	Slug        string          `json:"slug"`
-	Description json.RawMessage `json:"description"`
-	CategoryID  string          `json:"category_id,omitempty"`
-	Badge       string          `json:"badge,omitempty"`
-	IsActive    *bool           `json:"is_active,omitempty"`
-}
-
 // ProductResponse represents the response when returning a product
 type ProductResponse struct {
 	ID          string                   `json:"id"`
@@ -78,6 +68,27 @@ type ProductVariantStockResponse struct {
 	ReservedStock     int    `json:"reserved_stock"`
 	LowStockThreshold int    `json:"low_stock_threshold"`
 	LastUpdated       string `json:"last_updated"`
+}
+
+// UpdateProductRequest for updating product details
+type UpdateProductRequest struct {
+	Title           string                        `json:"title"`
+	Slug            string                        `json:"slug"`
+	Description     json.RawMessage               `json:"description"`
+	CategoryID      string                        `json:"category_id,omitempty"`
+	Badge           string                        `json:"badge,omitempty"`
+	IsActive        *bool                         `json:"is_active,omitempty"`
+	ProductVariants []UpdateProductVariantRequest `json:"variants,omitempty"`
+}
+
+type UpdateProductVariantRequest struct {
+	ID        string                      `json:"id" validate:"required"`
+	ProductID string                      `json:"product_id" validate:"required"`
+	Sku       string                      `json:"sku" validate:"required"`
+	Name      string                      `json:"name" validate:"required"`
+	Price     float64                     `json:"price" validate:"required,gt=0"`
+	IsActive  bool                        `json:"is_active"`
+	Stock     *ProductVariantStockRequest `json:"stock,omitempty"`
 }
 
 // ToProductResponse converts a Product entity and its variants to ProductResponse DTO

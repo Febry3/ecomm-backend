@@ -12,11 +12,6 @@ type ProductRepositoryPg struct {
 	db *gorm.DB
 }
 
-// UpdateProduct implements repository.ProductRepository.
-func (p *ProductRepositoryPg) UpdateProduct(ctx context.Context, product *entity.Product, productID string) error {
-	panic("unimplemented")
-}
-
 func NewProductRepositoryPg(db *gorm.DB) repository.ProductRepository {
 	return &ProductRepositoryPg{db: db}
 }
@@ -48,8 +43,9 @@ func (p *ProductRepositoryPg) GetProductsForBuyer(ctx context.Context) ([]entity
 	return products, nil
 }
 
-func (p *ProductRepositoryPg) UpdateProductForBuyer(ctx context.Context, product *entity.Product, productID string) error {
-	return p.db.WithContext(ctx).Save(product).Error
+func (p *ProductRepositoryPg) UpdateProductForSeller(ctx context.Context, product *entity.Product, productID string, sellerID int64) error {
+	db := TxFromContext(ctx, p.db)
+	return db.Model(&entity.Product{}).Where("id = ? and seller_id = ?", productID, sellerID).Updates(product).Error
 }
 
 func (p *ProductRepositoryPg) GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error) {

@@ -17,6 +17,7 @@ type ProductUsecaseContract interface {
 	GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error)
 	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, error)
 	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error)
+	UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64) (*dto.ProductResponse, error)
 }
 
 type ProductUsecase struct {
@@ -143,6 +144,72 @@ func (p *ProductUsecase) DeleteProductVariant(ctx context.Context, productVarian
 	return p.variantRepo.DeleteProductVariant(ctx, productVariantID)
 }
 
-func (p *ProductUsecase) UpdateProduct(ctx context.Context, product *entity.Product, productID string) (*dto.ProductResponse, error) {
-	return nil, nil
+func (p *ProductUsecase) UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64) (*dto.ProductResponse, error) {
+	if err := validator.New().Struct(product); err != nil {
+		p.log.Errorf("[ProductUsecase] Validate Product Error: %v", err.Error())
+		return nil, err
+	}
+
+	productEntity := &entity.Product{
+		ID:          productID,
+		Title:       product.Title,
+		Slug:        product.Slug,
+		Description: datatypes.JSON(product.Description),
+		Badge:       product.Badge,
+		IsActive:    *product.IsActive,
+	}
+
+	var updatedVariant []entity.ProductVariant
+	err := p.tx.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := p.productRepo.UpdateProductForSeller(txCtx, productEntity, productID, sellerID); err != nil {
+			p.log.Errorf("[ProductUsecase] Update Product Error: %v", err)
+			return err
+		}
+
+		for _, v := range product.ProductVariants {
+			variant := &entity.ProductVariant{
+				ProductID: productID,
+				Sku:       v.Sku,
+				Name:      v.Name,
+				Price:     v.Price,
+				IsActive:  v.IsActive,
+			}
+
+			if err := p.variantRepo.UpdateProductVariant(txCtx, variant, v.ID); err != nil {
+				p.log.Errorf("[ProductUsecase] Update Variant Error (SKU: %s): %v", v.Sku, err)
+				return err
+			}
+
+			stock := &entity.ProductVariantStock{
+				ProductVariantID:  v.ID,
+				CurrentStock:      0,
+				ReservedStock:     0,
+				LowStockThreshold: 5,
+			}
+
+			if v.Stock != nil {
+				stock.CurrentStock = v.Stock.CurrentStock
+				stock.ReservedStock = v.Stock.ReservedStock
+				if v.Stock.LowStockThreshold > 0 {
+					stock.LowStockThreshold = v.Stock.LowStockThreshold
+				}
+			}
+
+			if err := p.stockRepo.UpdateStock(txCtx, stock, v.ID); err != nil {
+				p.log.Errorf("[ProductUsecase] Update Stock Error (Variant: %s): %v", v.ID, err)
+				return err
+			}
+			variant.Stock = stock
+			updatedVariant = append(updatedVariant, *variant)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		p.log.Errorf("[ProductUsecase] UpdateProduct transaction failed: %v", err)
+		return nil, err
+	}
+
+	return dto.ToProductResponse(productEntity, updatedVariant), nil
 }

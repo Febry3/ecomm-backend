@@ -44,5 +44,6 @@ func (p *ProductVariantRepository) GetProductVariants(ctx context.Context, produ
 }
 
 func (p *ProductVariantRepository) UpdateProductVariant(ctx context.Context, productVariant *entity.ProductVariant, productVariantID string) error {
-	return p.db.WithContext(ctx).Save(productVariant).Error
+	db := TxFromContext(ctx, p.db)
+	return db.Model(&entity.ProductVariant{}).Where("id = ?", productVariantID).Updates(productVariant).Error
 }
