@@ -1,10 +1,12 @@
 package dto
 
+import "encoding/json"
+
 // CreateProductRequest is the main request for creating a product with variants
 type CreateProductRequest struct {
 	Title       string                  `json:"title" validate:"required"`
 	Slug        string                  `json:"slug" validate:"required"`
-	Description string                  `json:"description"`
+	Description json.RawMessage         `json:"description"`
 	CategoryID  string                  `json:"category_id,omitempty"`
 	Badge       string                  `json:"badge,omitempty"`
 	IsActive    bool                    `json:"is_active"`
@@ -29,12 +31,12 @@ type ProductVariantStockRequest struct {
 
 // UpdateProductRequest for updating product details
 type UpdateProductRequest struct {
-	Title       string `json:"title"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-	CategoryID  string `json:"category_id,omitempty"`
-	Badge       string `json:"badge,omitempty"`
-	IsActive    *bool  `json:"is_active,omitempty"`
+	Title       string          `json:"title"`
+	Slug        string          `json:"slug"`
+	Description json.RawMessage `json:"description"`
+	CategoryID  string          `json:"category_id,omitempty"`
+	Badge       string          `json:"badge,omitempty"`
+	IsActive    *bool           `json:"is_active,omitempty"`
 }
 
 // ProductResponse represents the response when returning a product
@@ -43,7 +45,7 @@ type ProductResponse struct {
 	SellerID    int64                    `json:"seller_id"`
 	Title       string                   `json:"title"`
 	Slug        string                   `json:"slug"`
-	Description string                   `json:"description"`
+	Description json.RawMessage          `json:"description"`
 	CategoryID  string                   `json:"category_id,omitempty"`
 	Badge       string                   `json:"badge,omitempty"`
 	IsActive    bool                     `json:"is_active"`

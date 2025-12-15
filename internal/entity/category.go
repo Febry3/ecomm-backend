@@ -3,7 +3,7 @@ package entity
 import "time"
 
 type Category struct {
-	ID          string    `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	ID          string    `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name        string    `json:"name" gorm:"not null"`
 	Slug        string    `json:"slug" gorm:"not null;uniqueIndex"`
 	Description string    `json:"description" gorm:"type:text"`

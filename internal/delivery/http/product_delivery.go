@@ -70,3 +70,61 @@ func (ph *ProductHandler) CreateProduct(c *gin.Context) {
 		"data":    product,
 	})
 }
+
+func (ph *ProductHandler) GetAllProductsForSeller(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		ph.log.Error("[ProductDelivery] No User in Context")
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized",
+		})
+		return
+	}
+	jwt := v.(*dto.JwtPayload)
+
+	products, err := ph.pr.GetAllProductsForSeller(c.Request.Context(), jwt.SellerID)
+	if err != nil {
+		ph.log.Errorf("[ProductDelivery] Get All Products Error: %v", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "products retrieved successfully",
+		"data":    products,
+	})
+}
+
+func (ph *ProductHandler) GetProductForSeller(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		ph.log.Error("[ProductDelivery] No User in Context")
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized",
+		})
+		return
+	}
+	jwt := v.(*dto.JwtPayload)
+
+	product, err := ph.pr.GetProductForSeller(c.Request.Context(), c.Param("id"), jwt.SellerID)
+	if err != nil {
+		ph.log.Errorf("[ProductDelivery] Get Product Error: %v", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "product retrieved successfully",
+		"data":    product,
+	})
+}

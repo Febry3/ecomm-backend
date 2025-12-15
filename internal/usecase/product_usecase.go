@@ -8,16 +8,22 @@ import (
 	"github.com/febry3/gamingin/internal/repository"
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
+	"gorm.io/datatypes"
 )
 
 type ProductUsecaseContract interface {
 	CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64) (*entity.Product, error)
+	GetAllProductsForBuyer(ctx context.Context) ([]entity.Product, error)
+	GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error)
+	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, error)
+	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error)
 }
 
 type ProductUsecase struct {
 	productRepo repository.ProductRepository
 	variantRepo repository.ProductVariantRepository
 	stockRepo   repository.ProductVariantStockRepository
+	sellerRepo  repository.SellerRepository
 	tx          repository.TxManager
 	log         *logrus.Logger
 }
@@ -26,6 +32,7 @@ func NewProductUsecase(
 	productRepo repository.ProductRepository,
 	variantRepo repository.ProductVariantRepository,
 	stockRepo repository.ProductVariantStockRepository,
+	sellerRepo repository.SellerRepository,
 	tx repository.TxManager,
 	log *logrus.Logger,
 ) ProductUsecaseContract {
@@ -33,6 +40,7 @@ func NewProductUsecase(
 		productRepo: productRepo,
 		variantRepo: variantRepo,
 		stockRepo:   stockRepo,
+		sellerRepo:  sellerRepo,
 		tx:          tx,
 		log:         log,
 	}
@@ -50,8 +58,7 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 		SellerID:    sellerID,
 		Title:       request.Title,
 		Slug:        request.Slug,
-		Description: request.Description,
-		CategoryID:  request.CategoryID,
+		Description: datatypes.JSON(request.Description),
 		Badge:       request.Badge,
 		IsActive:    request.IsActive,
 	}
@@ -111,4 +118,20 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 	}
 
 	return product, nil
+}
+
+func (p *ProductUsecase) GetAllProductsForBuyer(ctx context.Context) ([]entity.Product, error) {
+	return p.productRepo.GetProductsForBuyer(ctx)
+}
+
+func (p *ProductUsecase) GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error) {
+	return p.productRepo.GetProductForBuyer(ctx, productID)
+}
+
+func (p *ProductUsecase) GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, error) {
+	return p.productRepo.GetProductsForSeller(ctx, sellerId)
+}
+
+func (p *ProductUsecase) GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error) {
+	return p.productRepo.GetProductForSeller(ctx, productID, sellerId)
 }
