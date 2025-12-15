@@ -16,7 +16,7 @@ type ProductUsecaseContract interface {
 	GetAllProductsForBuyer(ctx context.Context) ([]entity.Product, error)
 	GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error)
 	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, error)
-	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error)
+	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error)
 }
 
 type ProductUsecase struct {
@@ -47,13 +47,11 @@ func NewProductUsecase(
 }
 
 func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64) (*entity.Product, error) {
-	// Validate request
 	if err := validator.New().Struct(request); err != nil {
 		p.log.Errorf("[ProductUsecase] Validate Product Error: %v", err.Error())
 		return nil, err
 	}
 
-	// Prepare product entity
 	product := &entity.Product{
 		SellerID:    sellerID,
 		Title:       request.Title,
@@ -63,15 +61,12 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 		IsActive:    request.IsActive,
 	}
 
-	// Use transaction to insert into 3 tables atomically
 	err := p.tx.WithTransaction(ctx, func(txCtx context.Context) error {
-		// Create Product
 		if err := p.productRepo.CreateProduct(txCtx, product); err != nil {
 			p.log.Errorf("[ProductUsecase] Create Product Error: %v", err)
 			return err
 		}
 
-		// Create Variants and Create Stock for each variant
 		for _, v := range request.Variants {
 			variant := &entity.ProductVariant{
 				ProductID: product.ID,
@@ -86,7 +81,6 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 				return err
 			}
 
-			// Create stock for this variant
 			stock := &entity.ProductVariantStock{
 				ProductVariantID:  variant.ID,
 				CurrentStock:      0,
@@ -94,7 +88,6 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 				LowStockThreshold: 5,
 			}
 
-			// If stock info provided in request, use it
 			if v.Stock != nil {
 				stock.CurrentStock = v.Stock.CurrentStock
 				stock.ReservedStock = v.Stock.ReservedStock
@@ -132,6 +125,24 @@ func (p *ProductUsecase) GetAllProductsForSeller(ctx context.Context, sellerId i
 	return p.productRepo.GetProductsForSeller(ctx, sellerId)
 }
 
-func (p *ProductUsecase) GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error) {
-	return p.productRepo.GetProductForSeller(ctx, productID, sellerId)
+func (p *ProductUsecase) GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error) {
+	product, err := p.productRepo.GetProductForSeller(ctx, productID, sellerId)
+	if err != nil {
+		return nil, err
+	}
+
+	productVariants, err := p.variantRepo.GetProductVariants(ctx, productID)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.ToProductResponse(product, productVariants), nil
+}
+
+func (p *ProductUsecase) DeleteProductVariant(ctx context.Context, productVariantID string) error {
+	return p.variantRepo.DeleteProductVariant(ctx, productVariantID)
+}
+
+func (p *ProductUsecase) UpdateProduct(ctx context.Context, product *entity.Product, productID string) (*dto.ProductResponse, error) {
+	return nil, nil
 }

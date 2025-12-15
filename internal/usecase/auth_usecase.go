@@ -201,11 +201,21 @@ func (a *AuthUsecase) RefreshAccessToken(ctx context.Context, refreshToken strin
 		return "", err
 	}
 
+	var seller *entity.Seller
+	if user.Role == "seller" {
+		seller, _ = a.seller.GetSeller(ctx, user.ID)
+	}
+
+	if seller == nil {
+		seller = &entity.Seller{ID: 0}
+	}
+
 	newAccessToken := a.jwt.IssueAccessToken(dto.JwtPayload{
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
 		Role:     user.Role,
+		SellerID: seller.ID,
 	})
 
 	return newAccessToken, nil

@@ -34,9 +34,9 @@ func (p *ProductVariantRepository) GetProductVariant(ctx context.Context, produc
 	return &productVariant, nil
 }
 
-func (p *ProductVariantRepository) GetProductVariants(ctx context.Context) ([]entity.ProductVariant, error) {
+func (p *ProductVariantRepository) GetProductVariants(ctx context.Context, productID string) ([]entity.ProductVariant, error) {
 	var productVariants []entity.ProductVariant
-	err := p.db.WithContext(ctx).Find(&productVariants).Error
+	err := p.db.WithContext(ctx).Where("product_id = ?", productID).Preload("Stock").Find(&productVariants).Error
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,10 @@
 package dto
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/febry3/gamingin/internal/entity"
+)
 
 // CreateProductRequest is the main request for creating a product with variants
 type CreateProductRequest struct {
@@ -74,4 +78,57 @@ type ProductVariantStockResponse struct {
 	ReservedStock     int    `json:"reserved_stock"`
 	LowStockThreshold int    `json:"low_stock_threshold"`
 	LastUpdated       string `json:"last_updated"`
+}
+
+// ToProductResponse converts a Product entity and its variants to ProductResponse DTO
+func ToProductResponse(product *entity.Product, variants []entity.ProductVariant) *ProductResponse {
+	variantResponses := make([]ProductVariantResponse, 0, len(variants))
+	for _, v := range variants {
+		variantResponses = append(variantResponses, ToProductVariantResponse(&v))
+	}
+
+	return &ProductResponse{
+		ID:          product.ID,
+		SellerID:    product.SellerID,
+		Title:       product.Title,
+		Slug:        product.Slug,
+		Description: json.RawMessage(product.Description),
+		CategoryID:  product.CategoryID,
+		Badge:       product.Badge,
+		IsActive:    product.IsActive,
+		Status:      product.Status,
+		CreatedAt:   product.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:   product.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		Variants:    variantResponses,
+	}
+}
+
+// ToProductVariantResponse converts a ProductVariant entity to ProductVariantResponse DTO
+func ToProductVariantResponse(variant *entity.ProductVariant) ProductVariantResponse {
+	response := ProductVariantResponse{
+		ID:        variant.ID,
+		ProductID: variant.ProductID,
+		Sku:       variant.Sku,
+		Name:      variant.Name,
+		Price:     variant.Price,
+		IsActive:  variant.IsActive,
+		CreatedAt: variant.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: variant.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+
+	if variant.Stock != nil {
+		response.Stock = ToProductVariantStockResponse(variant.Stock)
+	}
+
+	return response
+}
+
+// ToProductVariantStockResponse converts a ProductVariantStock entity to ProductVariantStockResponse DTO
+func ToProductVariantStockResponse(stock *entity.ProductVariantStock) *ProductVariantStockResponse {
+	return &ProductVariantStockResponse{
+		CurrentStock:      stock.CurrentStock,
+		ReservedStock:     stock.ReservedStock,
+		LowStockThreshold: stock.LowStockThreshold,
+		LastUpdated:       stock.LastUpdated.Format("2006-01-02T15:04:05Z07:00"),
+	}
 }
