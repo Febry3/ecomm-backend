@@ -40,6 +40,11 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 	auth.POST("/refresh", routeConfig.Auth.RefreshToken)
 	auth.POST("/google", routeConfig.Auth.LoginOrRegisterWithGoogle)
 
+	product := v1.Group("/product")
+	{
+		product.GET("/categories", routeConfig.Product.GetAllCategories)
+	}
+
 	protected := v1.Group("/user", middleware.AuthMiddleware(jwt))
 	{
 		protected.GET("/test", testUserInline)

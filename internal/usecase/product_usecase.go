@@ -18,15 +18,17 @@ type ProductUsecaseContract interface {
 	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, int, int, float64, int, error)
 	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error)
 	UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64) (*dto.ProductResponse, error)
+	GetAllCategories(ctx context.Context) ([]dto.CategoryResponse, error)
 }
 
 type ProductUsecase struct {
-	productRepo repository.ProductRepository
-	variantRepo repository.ProductVariantRepository
-	stockRepo   repository.ProductVariantStockRepository
-	sellerRepo  repository.SellerRepository
-	tx          repository.TxManager
-	log         *logrus.Logger
+	productRepo  repository.ProductRepository
+	variantRepo  repository.ProductVariantRepository
+	stockRepo    repository.ProductVariantStockRepository
+	sellerRepo   repository.SellerRepository
+	categoryRepo repository.CategoryRepository
+	tx           repository.TxManager
+	log          *logrus.Logger
 }
 
 func NewProductUsecase(
@@ -34,17 +36,28 @@ func NewProductUsecase(
 	variantRepo repository.ProductVariantRepository,
 	stockRepo repository.ProductVariantStockRepository,
 	sellerRepo repository.SellerRepository,
+	categoryRepo repository.CategoryRepository,
 	tx repository.TxManager,
 	log *logrus.Logger,
 ) ProductUsecaseContract {
 	return &ProductUsecase{
-		productRepo: productRepo,
-		variantRepo: variantRepo,
-		stockRepo:   stockRepo,
-		sellerRepo:  sellerRepo,
-		tx:          tx,
-		log:         log,
+		productRepo:  productRepo,
+		variantRepo:  variantRepo,
+		stockRepo:    stockRepo,
+		sellerRepo:   sellerRepo,
+		categoryRepo: categoryRepo,
+		tx:           tx,
+		log:          log,
 	}
+}
+
+func (p *ProductUsecase) GetAllCategories(ctx context.Context) ([]dto.CategoryResponse, error) {
+	categories, err := p.categoryRepo.GetAllCategories(ctx)
+	if err != nil {
+		p.log.Error("[ProductUsecase] GetAllCategories Error: ", err)
+		return nil, err
+	}
+	return dto.ToCategoryResponse(categories), nil
 }
 
 func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64) (*entity.Product, error) {

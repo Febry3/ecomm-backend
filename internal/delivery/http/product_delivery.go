@@ -21,6 +21,24 @@ func NewProductHandler(pr usecase.ProductUsecaseContract, log *logrus.Logger) *P
 	}
 }
 
+func (ph *ProductHandler) GetAllCategories(c *gin.Context) {
+	categories, err := ph.pr.GetAllCategories(c.Request.Context())
+	if err != nil {
+		ph.log.Errorf("[ProductDelivery] Get All Categories Error: %v", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "categories retrieved successfully",
+		"data":    categories,
+	})
+}
+
 func (ph *ProductHandler) CreateProduct(c *gin.Context) {
 	v, ok := c.Get("user")
 	if !ok {
