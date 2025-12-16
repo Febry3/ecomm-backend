@@ -15,7 +15,7 @@ type ProductUsecaseContract interface {
 	CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64) (*entity.Product, error)
 	GetAllProductsForBuyer(ctx context.Context) ([]entity.Product, error)
 	GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error)
-	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, error)
+	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, int, int, float64, int, error)
 	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error)
 	UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64) (*dto.ProductResponse, error)
 }
@@ -122,8 +122,29 @@ func (p *ProductUsecase) GetProductForBuyer(ctx context.Context, productID strin
 	return p.productRepo.GetProductForBuyer(ctx, productID)
 }
 
-func (p *ProductUsecase) GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, error) {
-	return p.productRepo.GetProductsForSeller(ctx, sellerId)
+func (p *ProductUsecase) GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, int, int, float64, int, error) {
+	products, err := p.productRepo.GetProductsForSeller(ctx, sellerId)
+	if err != nil {
+		p.log.Errorf("[ProductUsecase] GetProductsForSeller Error: %v", err)
+		return nil, 0, 0, 0, 0, err
+	}
+
+	countVariant := 0
+	totalStock := 0
+	totalInventoryValue := 0.0
+	totalStockAlert := 0
+
+	for _, product := range products {
+		countVariant += len(product.Variants)
+		for _, variant := range product.Variants {
+			totalStock += variant.Stock.CurrentStock
+			totalInventoryValue += variant.Price * float64(variant.Stock.CurrentStock)
+			if variant.Stock.CurrentStock < variant.Stock.LowStockThreshold {
+				totalStockAlert++
+			}
+		}
+	}
+	return products, countVariant, totalStock, totalInventoryValue, totalStockAlert, nil
 }
 
 func (p *ProductUsecase) GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error) {
@@ -173,6 +194,23 @@ func (p *ProductUsecase) UpdateProduct(ctx context.Context, product dto.UpdatePr
 				Name:      v.Name,
 				Price:     v.Price,
 				IsActive:  v.IsActive,
+			}
+
+			if v.ID == "" {
+				if err := p.variantRepo.CreateProductVariant(txCtx, variant); err != nil {
+					p.log.Errorf("[ProductUsecase] Create Variant Error (SKU: %s): %v", v.Sku, err)
+					return err
+				}
+				if err := p.stockRepo.CreateStock(txCtx, &entity.ProductVariantStock{
+					ProductVariantID:  variant.ID,
+					CurrentStock:      v.Stock.CurrentStock,
+					ReservedStock:     v.Stock.ReservedStock,
+					LowStockThreshold: v.Stock.LowStockThreshold,
+				}); err != nil {
+					p.log.Errorf("[ProductUsecase] Create Stock Error (Variant: %s): %v", variant.ID, err)
+					return err
+				}
+				break
 			}
 
 			if err := p.variantRepo.UpdateProductVariant(txCtx, variant, v.ID); err != nil {

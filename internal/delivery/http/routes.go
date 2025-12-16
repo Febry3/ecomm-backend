@@ -52,7 +52,7 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		protected.DELETE("/address/:id", routeConfig.Address.Delete)
 	}
 
-	protectedSeller := v1.Group("/seller", middleware.AuthMiddleware(jwt))
+	protectedSeller := v1.Group("/seller", middleware.AuthMiddleware(jwt), middleware.RoleMiddleware("seller"))
 	{
 		protectedSeller.POST("", routeConfig.Seller.RegisterSeller)
 		protectedSeller.PUT("", routeConfig.Seller.UpdateSeller)

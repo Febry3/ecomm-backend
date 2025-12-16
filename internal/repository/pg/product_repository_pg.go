@@ -59,7 +59,7 @@ func (p *ProductRepositoryPg) GetProductForSeller(ctx context.Context, productID
 
 func (p *ProductRepositoryPg) GetProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, error) {
 	var products []entity.Product
-	err := p.db.WithContext(ctx).Where("seller_id = ?", sellerId).Find(&products).Error
+	err := p.db.WithContext(ctx).Where("seller_id = ?", sellerId).Preload("Variants").Preload("Variants.Stock").Find(&products).Error
 	if err != nil {
 		return nil, err
 	}

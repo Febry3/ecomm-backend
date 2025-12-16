@@ -83,7 +83,7 @@ func (ph *ProductHandler) GetAllProductsForSeller(c *gin.Context) {
 	}
 	jwt := v.(*dto.JwtPayload)
 
-	products, err := ph.pr.GetAllProductsForSeller(c.Request.Context(), jwt.SellerID)
+	products, countVariant, totalStock, totalInventoryValue, totalStockAlert, err := ph.pr.GetAllProductsForSeller(c.Request.Context(), jwt.SellerID)
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Get All Products Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -96,7 +96,13 @@ func (ph *ProductHandler) GetAllProductsForSeller(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "products retrieved successfully",
-		"data":    products,
+		"data": gin.H{
+			"total_stock_alert":     totalStockAlert,
+			"total_inventory_value": totalInventoryValue,
+			"total_stock":           totalStock,
+			"count_variant":         countVariant,
+			"products":              products,
+		},
 	})
 }
 
