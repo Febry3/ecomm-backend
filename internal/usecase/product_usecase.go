@@ -2,9 +2,14 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"time"
 
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/entity"
+	"github.com/febry3/gamingin/internal/infra/storage"
 	"github.com/febry3/gamingin/internal/repository"
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
@@ -12,23 +17,26 @@ import (
 )
 
 type ProductUsecaseContract interface {
-	CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64) (*entity.Product, error)
+	CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64, files []*multipart.FileHeader) (*entity.Product, error)
 	GetAllProductsForBuyer(ctx context.Context) ([]entity.Product, error)
 	GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error)
 	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, int, int, float64, int, error)
 	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error)
 	UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64) (*dto.ProductResponse, error)
 	GetAllCategories(ctx context.Context) ([]dto.CategoryResponse, error)
+	DeleteProductVariant(ctx context.Context, productVariantID string, sellerID int64) error
 }
 
 type ProductUsecase struct {
-	productRepo  repository.ProductRepository
-	variantRepo  repository.ProductVariantRepository
-	stockRepo    repository.ProductVariantStockRepository
-	sellerRepo   repository.SellerRepository
-	categoryRepo repository.CategoryRepository
-	tx           repository.TxManager
-	log          *logrus.Logger
+	productRepo      repository.ProductRepository
+	variantRepo      repository.ProductVariantRepository
+	stockRepo        repository.ProductVariantStockRepository
+	sellerRepo       repository.SellerRepository
+	categoryRepo     repository.CategoryRepository
+	productImageRepo repository.ProductImageRepository
+	storage          storage.ObjectStorage
+	tx               repository.TxManager
+	log              *logrus.Logger
 }
 
 func NewProductUsecase(
@@ -37,17 +45,21 @@ func NewProductUsecase(
 	stockRepo repository.ProductVariantStockRepository,
 	sellerRepo repository.SellerRepository,
 	categoryRepo repository.CategoryRepository,
+	productImageRepo repository.ProductImageRepository,
+	storage storage.ObjectStorage,
 	tx repository.TxManager,
 	log *logrus.Logger,
 ) ProductUsecaseContract {
 	return &ProductUsecase{
-		productRepo:  productRepo,
-		variantRepo:  variantRepo,
-		stockRepo:    stockRepo,
-		sellerRepo:   sellerRepo,
-		categoryRepo: categoryRepo,
-		tx:           tx,
-		log:          log,
+		productRepo:      productRepo,
+		variantRepo:      variantRepo,
+		stockRepo:        stockRepo,
+		sellerRepo:       sellerRepo,
+		categoryRepo:     categoryRepo,
+		productImageRepo: productImageRepo,
+		storage:          storage,
+		tx:               tx,
+		log:              log,
 	}
 }
 
@@ -60,10 +72,43 @@ func (p *ProductUsecase) GetAllCategories(ctx context.Context) ([]dto.CategoryRe
 	return dto.ToCategoryResponse(categories), nil
 }
 
-func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64) (*entity.Product, error) {
+func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64, files []*multipart.FileHeader) (*entity.Product, error) {
 	if err := validator.New().Struct(request); err != nil {
 		p.log.Errorf("[ProductUsecase] Validate Product Error: %v", err.Error())
 		return nil, err
+	}
+
+	var productImageUrls []string
+	if len(files) > 0 {
+		for _, fileHeader := range files {
+			// Open the file
+			file, err := fileHeader.Open()
+			if err != nil {
+				p.log.Errorf("[ProductUsecase] Failed to open file %s: %v", fileHeader.Filename, err)
+				continue
+			}
+
+			// Read file bytes
+			fileBytes, err := io.ReadAll(file)
+			file.Close()
+			if err != nil {
+				p.log.Errorf("[ProductUsecase] Failed to read file %s: %v", fileHeader.Filename, err)
+				continue
+			}
+
+			// Generate unique filename
+			fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), fileHeader.Filename)
+
+			// Upload to storage
+			url, err := p.storage.Upload(ctx, fileName, fileBytes, "products")
+			if err != nil {
+				p.log.Errorf("[ProductUsecase] Failed to upload file %s: %v", fileHeader.Filename, err)
+				continue
+			}
+
+			productImageUrls = append(productImageUrls, url)
+			p.log.Debugf("[ProductUsecase] Uploaded file: %s -> %s", fileHeader.Filename, url)
+		}
 	}
 
 	product := &entity.Product{
@@ -71,6 +116,7 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 		Title:       request.Title,
 		Slug:        request.Slug,
 		Description: datatypes.JSON(request.Description),
+		CategoryID:  request.CategoryID,
 		Badge:       request.Badge,
 		IsActive:    request.IsActive,
 	}
@@ -79,6 +125,19 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 		if err := p.productRepo.CreateProduct(txCtx, product); err != nil {
 			p.log.Errorf("[ProductUsecase] Create Product Error: %v", err)
 			return err
+		}
+
+		for index, url := range productImageUrls {
+			productImage := &entity.ProductImage{
+				ProductID:    product.ID,
+				ImageURL:     url,
+				DisplayOrder: index,
+				AltText:      product.Title,
+			}
+			if err := p.productImageRepo.CreateProductImage(txCtx, productImage); err != nil {
+				p.log.Errorf("[ProductUsecase] Create Product Image Error: %v", err)
+				return err
+			}
 		}
 
 		for _, v := range request.Variants {
@@ -174,8 +233,8 @@ func (p *ProductUsecase) GetProductForSeller(ctx context.Context, productID stri
 	return dto.ToProductResponse(product, productVariants), nil
 }
 
-func (p *ProductUsecase) DeleteProductVariant(ctx context.Context, productVariantID string) error {
-	return p.variantRepo.DeleteProductVariant(ctx, productVariantID)
+func (p *ProductUsecase) DeleteProductVariant(ctx context.Context, productVariantID string, sellerID int64) error {
+	return p.variantRepo.DeleteProductVariant(ctx, productVariantID, sellerID)
 }
 
 func (p *ProductUsecase) UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64) (*dto.ProductResponse, error) {
@@ -188,6 +247,7 @@ func (p *ProductUsecase) UpdateProduct(ctx context.Context, product dto.UpdatePr
 		ID:          productID,
 		Title:       product.Title,
 		Slug:        product.Slug,
+		CategoryID:  product.CategoryID,
 		Description: datatypes.JSON(product.Description),
 		Badge:       product.Badge,
 		IsActive:    *product.IsActive,

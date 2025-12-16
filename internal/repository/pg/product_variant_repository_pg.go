@@ -21,8 +21,8 @@ func (p *ProductVariantRepository) CreateProductVariant(ctx context.Context, pro
 	return db.Create(productVariant).Error
 }
 
-func (p *ProductVariantRepository) DeleteProductVariant(ctx context.Context, productVariantID string) error {
-	return p.db.WithContext(ctx).Delete(&entity.ProductVariant{}, productVariantID).Error
+func (p *ProductVariantRepository) DeleteProductVariant(ctx context.Context, productVariantID string, sellerID int64) error {
+	return p.db.WithContext(ctx).Delete(&entity.ProductVariant{}, "id = ? AND seller_id = ?", productVariantID, sellerID).Error
 }
 
 func (p *ProductVariantRepository) GetProductVariant(ctx context.Context, productVariantID string) (*entity.ProductVariant, error) {

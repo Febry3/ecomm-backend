@@ -9,8 +9,8 @@ func main() {
 	log := config.NewLogrus()
 	viperConfig := config.NewViper(log)
 	db, _ := config.NewGorm(viperConfig, log)
-	_ = db.Migrator().DropTable(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{}, &entity.Address{}, &entity.Seller{}, &entity.Product{}, &entity.ProductVariant{}, &entity.ProductVariantStock{}, &entity.Category{})
-	_ = db.AutoMigrate(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{}, &entity.Address{}, &entity.Seller{}, &entity.Product{}, &entity.ProductVariant{}, &entity.ProductVariantStock{}, &entity.Category{})
+	_ = db.Migrator().DropTable(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{}, &entity.Address{}, &entity.Seller{}, &entity.Product{}, &entity.ProductVariant{}, &entity.ProductVariantStock{}, &entity.Category{}, &entity.ProductImage{})
+	_ = db.AutoMigrate(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{}, &entity.Address{}, &entity.Seller{}, &entity.Product{}, &entity.ProductVariant{}, &entity.ProductVariantStock{}, &entity.Category{}, &entity.ProductImage{})
 
 	categories := []entity.Category{
 		{

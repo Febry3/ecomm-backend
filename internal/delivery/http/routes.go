@@ -57,17 +57,24 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		protected.DELETE("/address/:id", routeConfig.Address.Delete)
 	}
 
-	protectedSeller := v1.Group("/seller", middleware.AuthMiddleware(jwt), middleware.RoleMiddleware("seller"))
+	protectedSeller := v1.Group("/seller", middleware.AuthMiddleware(jwt))
 	{
 		protectedSeller.POST("", routeConfig.Seller.RegisterSeller)
-		protectedSeller.PUT("", routeConfig.Seller.UpdateSeller)
-		protectedSeller.GET("", routeConfig.Seller.GetSeller)
 
-		// Product routes (seller only)
-		protectedSeller.POST("/products", routeConfig.Product.CreateProduct)
-		protectedSeller.GET("/products", routeConfig.Product.GetAllProductsForSeller)
-		protectedSeller.GET("/products/:id", routeConfig.Product.GetProductForSeller)
-		protectedSeller.PUT("/products/:id", routeConfig.Product.UpdateProduct)
+		sellerRole := protectedSeller.Group("", middleware.RoleMiddleware("seller"))
+		{
+			sellerRole.PUT("", routeConfig.Seller.UpdateSeller)
+			sellerRole.GET("", routeConfig.Seller.GetSeller)
+
+			// Product routes (seller only)
+			sellerRole.POST("/products", routeConfig.Product.CreateProduct)
+			sellerRole.GET("/products", routeConfig.Product.GetAllProductsForSeller)
+			sellerRole.GET("/products/:id", routeConfig.Product.GetProductForSeller)
+			sellerRole.PUT("/products/:id", routeConfig.Product.UpdateProduct)
+
+			sellerRole.DELETE("/products/variants/:id", routeConfig.Product.DeleteProductVariant)
+		}
+
 	}
 }
 

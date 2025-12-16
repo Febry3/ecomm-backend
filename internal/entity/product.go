@@ -12,7 +12,7 @@ type Product struct {
 	Title       string           `json:"title" gorm:"not null"`
 	Slug        string           `json:"slug" gorm:"not null;uniqueIndex"`
 	Description datatypes.JSON   `json:"description" gorm:"type:jsonb"`
-	CategoryID  string           `json:"category_id" gorm:"type:uuid;default:null"` // commented the not null
+	CategoryID  int64            `json:"category_id" gorm:"default:null"`
 	Badge       string           `json:"badge"`
 	IsActive    bool             `json:"is_active" gorm:"default:true"`
 	Status      string           `json:"status" gorm:"default:pending;check:status IN ('pending','approved','rejected')"`

@@ -11,7 +11,7 @@ type CreateProductRequest struct {
 	Title       string                  `json:"title" validate:"required"`
 	Slug        string                  `json:"slug" validate:"required"`
 	Description json.RawMessage         `json:"description"`
-	CategoryID  string                  `json:"category_id,omitempty"`
+	CategoryID  int64                   `json:"category_id,omitempty"`
 	Badge       string                  `json:"badge,omitempty"`
 	IsActive    bool                    `json:"is_active"`
 	Variants    []ProductVariantRequest `json:"variants" validate:"required,min=1,dive"`
@@ -40,7 +40,7 @@ type ProductResponse struct {
 	Title       string                   `json:"title"`
 	Slug        string                   `json:"slug"`
 	Description json.RawMessage          `json:"description"`
-	CategoryID  string                   `json:"category_id,omitempty"`
+	CategoryID  int64                    `json:"category_id,omitempty"`
 	Badge       string                   `json:"badge,omitempty"`
 	IsActive    bool                     `json:"is_active"`
 	Status      string                   `json:"status"`
@@ -75,7 +75,7 @@ type UpdateProductRequest struct {
 	Title           string                        `json:"title"`
 	Slug            string                        `json:"slug"`
 	Description     json.RawMessage               `json:"description"`
-	CategoryID      string                        `json:"category_id,omitempty"`
+	CategoryID      int64                         `json:"category_id,omitempty"`
 	Badge           string                        `json:"badge,omitempty"`
 	IsActive        *bool                         `json:"is_active,omitempty"`
 	ProductVariants []UpdateProductVariantRequest `json:"variants,omitempty"`

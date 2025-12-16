@@ -52,6 +52,7 @@ func Bootstrap(config *BootstrapConfig) {
 	variantRepository := pg.NewProductVariantRepositoryPg(config.DB)
 	stockRepository := pg.NewProductVariantStockRepositoryPg(config.DB)
 	categoryRepository := pg.NewCategoryRepositoryPg(config.DB)
+	productImageRepository := pg.NewProductImageRepositoryPg(config.DB)
 	txManager := pg.NewTxManager(config.DB)
 
 	// setup usecase
@@ -59,7 +60,7 @@ func Bootstrap(config *BootstrapConfig) {
 	userUsecase := usecase.NewUserUsecase(userRepository, config.Log, storage, sellerRepository)
 	addressUsecase := usecase.NewAddressUsecase(addressRepository, userRepository, config.Log)
 	sellerUsecase := usecase.NewSellerUsecase(sellerRepository, userRepository, txManager, config.Log, storage)
-	productUsecase := usecase.NewProductUsecase(productRepository, variantRepository, stockRepository, sellerRepository, categoryRepository, txManager, config.Log)
+	productUsecase := usecase.NewProductUsecase(productRepository, variantRepository, stockRepository, sellerRepository, categoryRepository, productImageRepository, storage, txManager, config.Log)
 
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
