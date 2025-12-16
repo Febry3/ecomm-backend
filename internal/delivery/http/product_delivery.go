@@ -209,17 +209,42 @@ func (ph *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 	jwt := v.(*dto.JwtPayload)
 
-	var req dto.UpdateProductRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		ph.log.Errorf("[ProductDelivery] Bind JSON Error: %v", err.Error())
+	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
+		ph.log.Errorf("[ProductDelivery] Parse Form Error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": false,
-			"error":  err.Error(),
+			"error":  "failed to parse form data",
 		})
 		return
 	}
 
-	product, err := ph.pr.UpdateProduct(c.Request.Context(), req, c.Param("id"), jwt.SellerID)
+	reqData := c.PostForm("data")
+	var req dto.UpdateProductRequest
+	if err := json.Unmarshal([]byte(reqData), &req); err != nil {
+		ph.log.Errorf("[ProductDelivery] Invalid JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": false,
+			"error":  "invalid JSON format",
+		})
+		return
+	}
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		ph.log.Errorf("[ProductDelivery] Parse Form Error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": false,
+			"error":  "failed to parse form data",
+		})
+		return
+	}
+
+	var files []*multipart.FileHeader
+	if form != nil && form.File != nil && form.File["images"] != nil {
+		files = form.File["images"]
+	}
+
+	product, err := ph.pr.UpdateProduct(c.Request.Context(), req, c.Param("id"), jwt.SellerID, files)
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Update Product Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{

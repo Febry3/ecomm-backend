@@ -22,7 +22,7 @@ type ProductUsecaseContract interface {
 	GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error)
 	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, int, int, float64, int, error)
 	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error)
-	UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64) (*dto.ProductResponse, error)
+	UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64, files []*multipart.FileHeader) (*dto.ProductResponse, error)
 	GetAllCategories(ctx context.Context) ([]dto.CategoryResponse, error)
 	DeleteProductVariant(ctx context.Context, productVariantID string, sellerID int64) error
 }
@@ -237,10 +237,40 @@ func (p *ProductUsecase) DeleteProductVariant(ctx context.Context, productVarian
 	return p.variantRepo.DeleteProductVariant(ctx, productVariantID, sellerID)
 }
 
-func (p *ProductUsecase) UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64) (*dto.ProductResponse, error) {
+func (p *ProductUsecase) UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64, files []*multipart.FileHeader) (*dto.ProductResponse, error) {
 	if err := validator.New().Struct(product); err != nil {
 		p.log.Errorf("[ProductUsecase] Validate Product Error: %v", err.Error())
 		return nil, err
+	}
+
+	// Process file uploads
+	var productImageUrls []string
+	if len(files) > 0 {
+		for _, fileHeader := range files {
+			file, err := fileHeader.Open()
+			if err != nil {
+				p.log.Errorf("[ProductUsecase] Failed to open file %s: %v", fileHeader.Filename, err)
+				continue
+			}
+
+			fileBytes, err := io.ReadAll(file)
+			file.Close()
+			if err != nil {
+				p.log.Errorf("[ProductUsecase] Failed to read file %s: %v", fileHeader.Filename, err)
+				continue
+			}
+
+			fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), fileHeader.Filename)
+
+			url, err := p.storage.Upload(ctx, fileName, fileBytes, "products")
+			if err != nil {
+				p.log.Errorf("[ProductUsecase] Failed to upload file %s: %v", fileHeader.Filename, err)
+				continue
+			}
+
+			productImageUrls = append(productImageUrls, url)
+			p.log.Debugf("[ProductUsecase] Uploaded file: %s -> %s", fileHeader.Filename, url)
+		}
 	}
 
 	productEntity := &entity.Product{
@@ -258,6 +288,20 @@ func (p *ProductUsecase) UpdateProduct(ctx context.Context, product dto.UpdatePr
 		if err := p.productRepo.UpdateProductForSeller(txCtx, productEntity, productID, sellerID); err != nil {
 			p.log.Errorf("[ProductUsecase] Update Product Error: %v", err)
 			return err
+		}
+
+		// Add new images (append to existing)
+		for index, url := range productImageUrls {
+			productImage := &entity.ProductImage{
+				ProductID:    productID,
+				ImageURL:     url,
+				DisplayOrder: index,
+				AltText:      product.Title,
+			}
+			if err := p.productImageRepo.CreateProductImage(txCtx, productImage); err != nil {
+				p.log.Errorf("[ProductUsecase] Create Product Image Error: %v", err)
+				return err
+			}
 		}
 
 		for _, v := range product.ProductVariants {
