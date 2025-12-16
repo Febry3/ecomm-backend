@@ -21,7 +21,7 @@ type ProductUsecaseContract interface {
 	GetAllProductsForBuyer(ctx context.Context) ([]entity.Product, error)
 	GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error)
 	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, int, int, float64, int, error)
-	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error)
+	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error)
 	UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64, files []*multipart.FileHeader) (*dto.ProductResponse, error)
 	GetAllCategories(ctx context.Context) ([]dto.CategoryResponse, error)
 	DeleteProductVariant(ctx context.Context, productVariantID string, sellerID int64) error
@@ -219,18 +219,13 @@ func (p *ProductUsecase) GetAllProductsForSeller(ctx context.Context, sellerId i
 	return products, countVariant, totalStock, totalInventoryValue, totalStockAlert, nil
 }
 
-func (p *ProductUsecase) GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*dto.ProductResponse, error) {
+func (p *ProductUsecase) GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error) {
 	product, err := p.productRepo.GetProductForSeller(ctx, productID, sellerId)
 	if err != nil {
 		return nil, err
 	}
 
-	productVariants, err := p.variantRepo.GetProductVariants(ctx, productID)
-	if err != nil {
-		return nil, err
-	}
-
-	return dto.ToProductResponse(product, productVariants), nil
+	return product, nil
 }
 
 func (p *ProductUsecase) DeleteProductVariant(ctx context.Context, productVariantID string, sellerID int64) error {
