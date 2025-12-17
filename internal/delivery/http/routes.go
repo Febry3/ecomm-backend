@@ -12,12 +12,13 @@ import (
 )
 
 type RouteConfig struct {
-	App     *gin.Engine
-	Auth    AuthHandler
-	User    UserHandler
-	Address AddressHandler
-	Seller  SellerHandler
-	Product ProductHandler
+	App      *gin.Engine
+	Auth     AuthHandler
+	User     UserHandler
+	Address  AddressHandler
+	Seller   SellerHandler
+	Product  ProductHandler
+	GroupBuy GroupBuyHandler
 }
 
 func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
@@ -72,7 +73,12 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 			sellerRole.GET("/products/:id", routeConfig.Product.GetProductForSeller)
 			sellerRole.PUT("/products/:id", routeConfig.Product.UpdateProduct)
 
+			// Product Variant
 			sellerRole.DELETE("/products/variants/:id", routeConfig.Product.DeleteProductVariant)
+
+			// Group Buy
+			sellerRole.POST("/group-buy", routeConfig.GroupBuy.CreateGroupBuySession)
+			sellerRole.GET("/group-buy", routeConfig.GroupBuy.GetAllGroupBuySessionForSeller)
 		}
 
 	}
