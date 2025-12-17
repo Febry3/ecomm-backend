@@ -27,7 +27,7 @@ func (p *ProductVariantRepository) DeleteProductVariant(ctx context.Context, pro
 
 func (p *ProductVariantRepository) GetProductVariant(ctx context.Context, productVariantID string) (*entity.ProductVariant, error) {
 	var productVariant entity.ProductVariant
-	err := p.db.WithContext(ctx).Preload("Stock").First(&productVariant, productVariantID).Error
+	err := p.db.WithContext(ctx).Preload("Stock").Where("id = ?", productVariantID).First(&productVariant).Error
 	if err != nil {
 		return nil, err
 	}

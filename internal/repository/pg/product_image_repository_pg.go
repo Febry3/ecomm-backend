@@ -17,5 +17,6 @@ func NewProductImageRepositoryPg(db *gorm.DB) repository.ProductImageRepository 
 }
 
 func (p *ProductImageRepositoryPg) CreateProductImage(ctx context.Context, productImage *entity.ProductImage) error {
-	return p.db.Create(productImage).Error
+	db := TxFromContext(ctx, p.db)
+	return db.Create(productImage).Error
 }

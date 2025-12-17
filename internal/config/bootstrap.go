@@ -53,6 +53,8 @@ func Bootstrap(config *BootstrapConfig) {
 	stockRepository := pg.NewProductVariantStockRepositoryPg(config.DB)
 	categoryRepository := pg.NewCategoryRepositoryPg(config.DB)
 	productImageRepository := pg.NewProductImageRepositoryPg(config.DB)
+	groupBuySessionRepository := pg.NewGroupBuySessionRepositoryPg(config.DB)
+	groupBuyTierRepository := pg.NewGroupBuyTierRepositoryPg(config.DB)
 	txManager := pg.NewTxManager(config.DB)
 
 	// setup usecase
@@ -61,6 +63,7 @@ func Bootstrap(config *BootstrapConfig) {
 	addressUsecase := usecase.NewAddressUsecase(addressRepository, userRepository, config.Log)
 	sellerUsecase := usecase.NewSellerUsecase(sellerRepository, userRepository, txManager, config.Log, storage)
 	productUsecase := usecase.NewProductUsecase(productRepository, variantRepository, stockRepository, sellerRepository, categoryRepository, productImageRepository, storage, txManager, config.Log)
+	groupBuyUsecase := usecase.NewGroupBuyUsecase(groupBuySessionRepository, groupBuyTierRepository, productRepository, variantRepository, txManager, config.Log)
 
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
@@ -68,14 +71,16 @@ func Bootstrap(config *BootstrapConfig) {
 	addressHandler := http.NewAddressHandler(addressUsecase, userUsecase, config.Log)
 	sellerHandler := http.NewSellerHandler(sellerUsecase, config.Log)
 	productHandler := http.NewProductHandler(productUsecase, config.Log)
+	groupBuyHandler := http.NewGroupBuyHandler(groupBuyUsecase, config.Log)
 
 	routeConfig := http.RouteConfig{
-		App:     config.App,
-		Auth:    *authHandler,
-		User:    *userHandler,
-		Address: *addressHandler,
-		Seller:  *sellerHandler,
-		Product: *productHandler,
+		App:      config.App,
+		Auth:     *authHandler,
+		User:     *userHandler,
+		Address:  *addressHandler,
+		Seller:   *sellerHandler,
+		Product:  *productHandler,
+		GroupBuy: *groupBuyHandler,
 	}
 
 	routeConfig.Init(jwt)

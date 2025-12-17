@@ -76,7 +76,7 @@ func (gh *GroupBuyHandler) CreateGroupBuySession(c *gin.Context) {
 	jwt := v.(*dto.JwtPayload)
 
 	var req *dto.GroupBuySessionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		gh.log.Error("[ProductDelivery] CreateGroupBuySession failed: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,

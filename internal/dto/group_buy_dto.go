@@ -9,7 +9,7 @@ import (
 type GroupBuySessionRequest struct {
 	ProductVariantID string                `json:"product_variant_id" binding:"required"`
 	MinParticipants  int                   `json:"min_participants" binding:"required,min=1"`
-	MaxParticipants  int                   `json:"max_participants" binding:"required,min=1,gtfield:MinParticipants"`
+	MaxParticipants  int                   `json:"max_participants" binding:"required,min=1"`
 	MaxQuantity      int                   `json:"max_quantity" binding:"required,min=1"`
 	ExpiresAt        time.Time             `json:"expires_at" binding:"required"`
 	Tiers            []GroupBuyTierRequest `json:"tiers" binding:"required,min=1,dive"`

@@ -18,7 +18,7 @@ func NewGroupBuySessionRepositoryPg(db *gorm.DB) repository.GroupBuySessionRepos
 
 func (g *GroupBuySessionRepositoryPg) GetAllForSeller(ctx context.Context, sellerID int64) ([]entity.GroupBuySession, error) {
 	var sessions []entity.GroupBuySession
-	if err := g.db.Preload("Seller").Preload("Product").Preload("GroupBuyTiers").Where("seller_id = ?", sellerID).Find(&sessions).Error; err != nil {
+	if err := g.db.Preload("Seller").Preload("ProductVariant").Preload("GroupBuyTiers").Where("seller_id = ?", sellerID).Find(&sessions).Error; err != nil {
 		return nil, err
 	}
 	return sessions, nil
@@ -26,7 +26,7 @@ func (g *GroupBuySessionRepositoryPg) GetAllForSeller(ctx context.Context, selle
 
 func (g *GroupBuySessionRepositoryPg) GetAllForBuyer(ctx context.Context) ([]entity.GroupBuySession, error) {
 	var sessions []entity.GroupBuySession
-	if err := g.db.Preload("Seller").Preload("Product").Preload("GroupBuyTiers").Find(&sessions).Error; err != nil {
+	if err := g.db.Preload("Seller").Preload("ProductVariant").Preload("GroupBuyTiers").Find(&sessions).Error; err != nil {
 		return nil, err
 	}
 	return sessions, nil
@@ -42,7 +42,7 @@ func (g *GroupBuySessionRepositoryPg) Delete(ctx context.Context, sessionID stri
 
 func (g *GroupBuySessionRepositoryPg) FindByID(ctx context.Context, sessionID string) (*entity.GroupBuySession, error) {
 	var tier entity.GroupBuySession
-	if err := g.db.Preload("Seller").Preload("Product").Preload("GroupBuyTiers").First(&tier, sessionID).Error; err != nil {
+	if err := g.db.Preload("Seller").Preload("ProductVariant").Preload("GroupBuyTiers").First(&tier, sessionID).Error; err != nil {
 		return nil, err
 	}
 	return &tier, nil
