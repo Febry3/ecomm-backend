@@ -17,6 +17,7 @@ type GroupBuyUsecaseContract interface {
 	FindGroupBuySessionByID(ctx context.Context, sessionID string) (*entity.GroupBuySession, error)
 	GetAllGroupBuySessionForSeller(ctx context.Context, sellerID int64) ([]entity.GroupBuySession, error)
 	GetAllGroupBuySessionForBuyer(ctx context.Context) ([]entity.GroupBuySession, error)
+	ChangeGroupBuySessionStatus(ctx context.Context, sessionID string, status string, sellerID int64) error
 }
 
 type GroupBuyUsecase struct {
@@ -123,4 +124,8 @@ func (g *GroupBuyUsecase) GetAllGroupBuySessionForSeller(ctx context.Context, se
 
 func (g *GroupBuyUsecase) GetAllGroupBuySessionForBuyer(ctx context.Context) ([]entity.GroupBuySession, error) {
 	return g.groupBuySessionRepo.GetAllForBuyer(ctx)
+}
+
+func (g *GroupBuyUsecase) ChangeGroupBuySessionStatus(ctx context.Context, sessionID string, status string, sellerID int64) error {
+	return g.groupBuySessionRepo.ChangeStatus(ctx, sessionID, status, sellerID)
 }

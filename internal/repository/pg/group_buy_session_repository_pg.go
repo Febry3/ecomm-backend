@@ -16,8 +16,8 @@ func NewGroupBuySessionRepositoryPg(db *gorm.DB) repository.GroupBuySessionRepos
 	return &GroupBuySessionRepositoryPg{db: db}
 }
 
-func (g *GroupBuySessionRepositoryPg) ChangeStatus(ctx context.Context, sessionID string, status string) error {
-	return g.db.WithContext(ctx).Model(&entity.GroupBuySession{}).Where("id = ?", sessionID).Update("status", status).Error
+func (g *GroupBuySessionRepositoryPg) ChangeStatus(ctx context.Context, sessionID string, status string, sellerID int64) error {
+	return g.db.WithContext(ctx).Model(&entity.GroupBuySession{}).Where("id = ? and seller_id = ?", sessionID, sellerID).Update("status", status).Error
 }
 
 func (g *GroupBuySessionRepositoryPg) GetAllForSeller(ctx context.Context, sellerID int64) ([]entity.GroupBuySession, error) {

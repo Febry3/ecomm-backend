@@ -12,5 +12,5 @@ type GroupBuySessionRepository interface {
 	Delete(ctx context.Context, sessionID string) error
 	GetAllForSeller(ctx context.Context, sellerID int64) ([]entity.GroupBuySession, error)
 	GetAllForBuyer(ctx context.Context) ([]entity.GroupBuySession, error)
-	ChangeStatus(ctx context.Context, sessionID string, status string) error
+	ChangeStatus(ctx context.Context, sessionID string, status string, sellerID int64) error
 }

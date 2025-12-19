@@ -79,6 +79,7 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 			// Group Buy
 			sellerRole.POST("/group-buy", routeConfig.GroupBuy.CreateGroupBuySession)
 			sellerRole.GET("/group-buy", routeConfig.GroupBuy.GetAllGroupBuySessionForSeller)
+			sellerRole.PATCH("/group-buy/status", routeConfig.GroupBuy.ChangeGroupBuySessionStatus)
 		}
 
 	}

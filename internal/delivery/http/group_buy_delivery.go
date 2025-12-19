@@ -18,6 +18,43 @@ func NewGroupBuyHandler(pu usecase.GroupBuyUsecaseContract, log *logrus.Logger) 
 	return &GroupBuyHandler{pu: pu, log: log}
 }
 
+func (gh *GroupBuyHandler) ChangeGroupBuySessionStatus(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		gh.log.Error("[ProductDelivery] No User in Context")
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "unauthorized",
+			"error":   "unauthorized user",
+		})
+		return
+	}
+	jwt := v.(*dto.JwtPayload)
+
+	var req dto.ChangeStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		gh.log.Error("[ProductDelivery] ChangeGroupBuySessionStatus failed: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to change group buy session status",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	err := gh.pu.ChangeGroupBuySessionStatus(c.Request.Context(), req.SessionID, req.Status, jwt.SellerID)
+	if err != nil {
+		gh.log.Error("[ProductDelivery] ChangeGroupBuySessionStatus failed: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to change group buy session status",
+			"error":   err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "success to change group buy status",
+	})
+}
+
 func (gh *GroupBuyHandler) GetAllGroupBuySessionForSeller(c *gin.Context) {
 	v, ok := c.Get("user")
 	if !ok {

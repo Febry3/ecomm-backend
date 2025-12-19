@@ -35,3 +35,8 @@ type GroupBuySessionResponse struct {
 	ProductVariant   ProductVariantResponse `json:"product_variant,omitempty"`
 	Tiers            []entity.GroupBuyTier  `json:"tiers"`
 }
+
+type ChangeStatusRequest struct {
+	SessionID string `json:"session_id" binding:"required"`
+	Status    string `json:"status" binding:"required"`
+}
