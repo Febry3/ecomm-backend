@@ -35,7 +35,7 @@ func (gh *GroupBuyHandler) GetAllGroupBuySessionForSeller(c *gin.Context) {
 		gh.log.Error("[ProductDelivery] GetAllGroupBuySessionForSeller failed: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
-			"message": "internal server error",
+			"message": err.Error(),
 		})
 		return
 	}
@@ -90,7 +90,7 @@ func (gh *GroupBuyHandler) CreateGroupBuySession(c *gin.Context) {
 		gh.log.Error("[ProductDelivery] CreateGroupBuySession failed: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
-			"message": "internal server error",
+			"message": err.Error(),
 		})
 		return
 	}

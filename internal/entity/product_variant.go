@@ -9,9 +9,10 @@ type ProductVariant struct {
 	Name      string               `json:"name" gorm:"not null"`
 	Price     float64              `json:"price" gorm:"not null"`
 	IsActive  bool                 `json:"is_active" gorm:"default:true"`
-	CreatedAt time.Time            `json:"created_at" gorm:"autoCreateTime;type:timestamptz"`
-	UpdatedAt time.Time            `json:"updated_at" gorm:"autoUpdateTime;type:timestamptz"`
+	CreatedAt time.Time            `json:"-" gorm:"autoCreateTime;type:timestamptz"`
+	UpdatedAt time.Time            `json:"-" gorm:"autoUpdateTime;type:timestamptz"`
 	Stock     *ProductVariantStock `json:"stock,omitempty" gorm:"foreignKey:ProductVariantID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Product   *Product             `json:"product,omitempty" gorm:"foreignKey:ProductID;references:ID"`
 }
 
 func (pv *ProductVariant) TableName() string {

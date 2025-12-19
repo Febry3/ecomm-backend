@@ -5,6 +5,7 @@ import (
 
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/entity"
+	"github.com/febry3/gamingin/internal/errorx"
 	"github.com/febry3/gamingin/internal/repository"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -50,7 +51,7 @@ func (g *GroupBuyUsecase) CreateGroupBuySession(ctx context.Context, request *dt
 
 		if productVariant.Stock.CurrentStock < request.MaxQuantity {
 			g.log.Errorf("product variant stock is not enough")
-			return err
+			return errorx.ErrInsufficientStock
 		}
 
 		productVariant.Stock.CurrentStock -= request.MaxQuantity

@@ -15,4 +15,6 @@ var (
 	ErrParseToken   = errors.New("failed to parse token")
 
 	ErrSellerAlreadyExists = errors.New("seller already exists")
+
+	ErrInsufficientStock = errors.New("product variant stock is not enough")
 )

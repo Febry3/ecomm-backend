@@ -14,11 +14,11 @@ type GroupBuySession struct {
 	Status           string         `json:"status" gorm:"default:active;check:status IN ('active','completed','cancelled')"`
 	MaxQuantity      int64          `json:"max_quantity" gorm:"not null"`
 	ExpiresAt        time.Time      `json:"expires_at" gorm:"not null;type:timestamptz"`
-	CreatedAt        time.Time      `json:"created_at" gorm:"autoCreateTime;type:timestamptz"`
-	UpdatedAt        time.Time      `json:"updated_at" gorm:"autoUpdateTime;type:timestamptz"`
+	CreatedAt        time.Time      `json:"-" gorm:"autoCreateTime;type:timestamptz"`
+	UpdatedAt        time.Time      `json:"-" gorm:"autoUpdateTime;type:timestamptz"`
 	ProductVariant   ProductVariant `json:"product_variant,omitempty" gorm:"foreignKey:ProductVariantID"`
-	Seller           Seller         `json:"seller" gorm:"foreignKey:SellerID"`
-	GroupBuyTiers    []GroupBuyTier `json:"group_buy_tiers,omitempty" gorm:"foreignKey:GroupBuySessionID"`
+	// Seller           Seller         `json:"seller" gorm:"foreignKey:SellerID"`
+	GroupBuyTiers []GroupBuyTier `json:"group_buy_tiers,omitempty" gorm:"foreignKey:GroupBuySessionID"`
 }
 
 func (gbs *GroupBuySession) TableName() string {

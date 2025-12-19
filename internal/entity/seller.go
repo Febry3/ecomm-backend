@@ -15,8 +15,8 @@ type Seller struct {
 	IsVerified    bool      `json:"is_verified" gorm:"default:false"`
 	AverageRating float64   `json:"average_rating" gorm:"default:0"`
 	TotalSales    int       `json:"total_sales" gorm:"default:0"`
-	CreatedAt     time.Time `json:"created_at" gorm:"autoCreateTime;type:timestamptz"`
-	UpdatedAt     time.Time `json:"updated_at" gorm:"autoUpdateTime;type:timestamptz"`
+	CreatedAt     time.Time `json:"-" gorm:"autoCreateTime;type:timestamptz"`
+	UpdatedAt     time.Time `json:"-" gorm:"autoUpdateTime;type:timestamptz"`
 }
 
 func (s *Seller) TableName() string {

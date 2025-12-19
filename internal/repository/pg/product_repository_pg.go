@@ -50,7 +50,7 @@ func (p *ProductRepositoryPg) UpdateProductForSeller(ctx context.Context, produc
 
 func (p *ProductRepositoryPg) GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error) {
 	var products entity.Product
-	err := p.db.WithContext(ctx).Where("seller_id = ? and id = ?", sellerId, productID).Preload("Variants").Preload("Variants.Stock").Preload("ProductImages").First(&products).Error
+	err := p.db.WithContext(ctx).Where("seller_id = ? and id = ?", sellerId, productID).Preload("Variants").Preload("Variants.Stock").Preload("ProductImages").Order("created_at DESC").First(&products).Error
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (p *ProductRepositoryPg) GetProductForSeller(ctx context.Context, productID
 
 func (p *ProductRepositoryPg) GetProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, error) {
 	var products []entity.Product
-	err := p.db.WithContext(ctx).Where("seller_id = ?", sellerId).Preload("Variants").Preload("Variants.Stock").Find(&products).Error
+	err := p.db.WithContext(ctx).Where("seller_id = ?", sellerId).Preload("ProductImages").Preload("Variants").Preload("Variants.Stock").Order("created_at DESC").Find(&products).Error
 	if err != nil {
 		return nil, err
 	}
