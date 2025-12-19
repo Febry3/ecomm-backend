@@ -28,8 +28,8 @@ func (ph *ProductHandler) GetAllCategories(c *gin.Context) {
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Get All Categories Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": false,
-			"error":  err.Error(),
+			"message": "failed to get all categories",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -46,8 +46,8 @@ func (ph *ProductHandler) DeleteProductVariant(c *gin.Context) {
 	if !ok {
 		ph.log.Error("[ProductDelivery] No User in Context")
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
 			"message": "unauthorized",
+			"error":   "unauthorized user",
 		})
 		return
 	}
@@ -57,8 +57,8 @@ func (ph *ProductHandler) DeleteProductVariant(c *gin.Context) {
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Delete Product Variant Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": false,
-			"error":  err.Error(),
+			"message": "failed to delete product variant",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -74,8 +74,8 @@ func (ph *ProductHandler) CreateProduct(c *gin.Context) {
 	if !ok {
 		ph.log.Error("[ProductDelivery] No User in Context")
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
 			"message": "unauthorized",
+			"error":   "unauthorized user",
 		})
 		return
 	}
@@ -84,8 +84,8 @@ func (ph *ProductHandler) CreateProduct(c *gin.Context) {
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
 		ph.log.Errorf("[ProductDelivery] Parse Form Error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status": false,
-			"error":  "failed to parse form data",
+			"message": "failed to parse form data",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -95,8 +95,8 @@ func (ph *ProductHandler) CreateProduct(c *gin.Context) {
 	if err := json.Unmarshal([]byte(reqData), &req); err != nil {
 		ph.log.Errorf("[ProductDelivery] Invalid JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status": false,
-			"error":  "invalid JSON format",
+			"message": "invalid JSON format",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -105,8 +105,8 @@ func (ph *ProductHandler) CreateProduct(c *gin.Context) {
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Parse Form Error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status": false,
-			"error":  "failed to parse form data",
+			"message": "failed to parse form data",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -120,8 +120,8 @@ func (ph *ProductHandler) CreateProduct(c *gin.Context) {
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Create Product Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": false,
-			"error":  err.Error(),
+			"message": "failed to create product",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -138,8 +138,8 @@ func (ph *ProductHandler) GetAllProductsForSeller(c *gin.Context) {
 	if !ok {
 		ph.log.Error("[ProductDelivery] No User in Context")
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
 			"message": "unauthorized",
+			"error":   "unauthorized user",
 		})
 		return
 	}
@@ -149,8 +149,8 @@ func (ph *ProductHandler) GetAllProductsForSeller(c *gin.Context) {
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Get All Products Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": false,
-			"error":  err.Error(),
+			"message": "failed to get all products",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -173,8 +173,8 @@ func (ph *ProductHandler) GetProductForSeller(c *gin.Context) {
 	if !ok {
 		ph.log.Error("[ProductDelivery] No User in Context")
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
 			"message": "unauthorized",
+			"error":   "unauthorized user",
 		})
 		return
 	}
@@ -184,8 +184,8 @@ func (ph *ProductHandler) GetProductForSeller(c *gin.Context) {
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Get Product Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": false,
-			"error":  err.Error(),
+			"message": "failed to get product",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -202,8 +202,8 @@ func (ph *ProductHandler) UpdateProduct(c *gin.Context) {
 	if !ok {
 		ph.log.Error("[ProductDelivery] No User in Context")
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
 			"message": "unauthorized",
+			"error":   "unauthorized user",
 		})
 		return
 	}
@@ -212,8 +212,8 @@ func (ph *ProductHandler) UpdateProduct(c *gin.Context) {
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
 		ph.log.Errorf("[ProductDelivery] Parse Form Error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status": false,
-			"error":  "failed to parse form data",
+			"message": "failed to parse form data",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -223,8 +223,8 @@ func (ph *ProductHandler) UpdateProduct(c *gin.Context) {
 	if err := json.Unmarshal([]byte(reqData), &req); err != nil {
 		ph.log.Errorf("[ProductDelivery] Invalid JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status": false,
-			"error":  "invalid JSON format",
+			"message": "invalid JSON format",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -233,8 +233,8 @@ func (ph *ProductHandler) UpdateProduct(c *gin.Context) {
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Parse Form Error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status": false,
-			"error":  "failed to parse form data",
+			"message": "failed to parse form data",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -248,8 +248,8 @@ func (ph *ProductHandler) UpdateProduct(c *gin.Context) {
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Update Product Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": false,
-			"error":  err.Error(),
+			"message": "failed to update product",
+			"error":   err.Error(),
 		})
 		return
 	}

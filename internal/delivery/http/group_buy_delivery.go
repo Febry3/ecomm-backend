@@ -23,8 +23,8 @@ func (gh *GroupBuyHandler) GetAllGroupBuySessionForSeller(c *gin.Context) {
 	if !ok {
 		gh.log.Error("[ProductDelivery] No User in Context")
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
 			"message": "unauthorized",
+			"error":   "unauthorized user",
 		})
 		return
 	}
@@ -34,8 +34,8 @@ func (gh *GroupBuyHandler) GetAllGroupBuySessionForSeller(c *gin.Context) {
 	if err != nil {
 		gh.log.Error("[ProductDelivery] GetAllGroupBuySessionForSeller failed: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  false,
-			"message": err.Error(),
+			"message": "failed to get group buy session for seller",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -51,8 +51,8 @@ func (gh *GroupBuyHandler) GetAllGroupBuySessionForBuyer(c *gin.Context) {
 	if err != nil {
 		gh.log.Error("[ProductDelivery] GetAllGroupBuySessionForBuyer failed: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  false,
-			"message": "internal server error",
+			"message": "failed to get group buy session for buyer",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -68,8 +68,8 @@ func (gh *GroupBuyHandler) CreateGroupBuySession(c *gin.Context) {
 	if !ok {
 		gh.log.Error("[ProductDelivery] No User in Context")
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
 			"message": "unauthorized",
+			"error":   "unauthorized user",
 		})
 		return
 	}
@@ -79,8 +79,8 @@ func (gh *GroupBuyHandler) CreateGroupBuySession(c *gin.Context) {
 	if err := c.ShouldBind(&req); err != nil {
 		gh.log.Error("[ProductDelivery] CreateGroupBuySession failed: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  false,
-			"message": "internal server error",
+			"message": "failed to create group buy session",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -89,8 +89,8 @@ func (gh *GroupBuyHandler) CreateGroupBuySession(c *gin.Context) {
 	if err != nil {
 		gh.log.Error("[ProductDelivery] CreateGroupBuySession failed: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  false,
-			"message": err.Error(),
+			"message": "failed to create group buy session",
+			"error":   err.Error(),
 		})
 		return
 	}

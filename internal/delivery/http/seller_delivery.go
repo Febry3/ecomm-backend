@@ -38,7 +38,10 @@ func (sd *SellerHandler) RegisterSeller(c *gin.Context) {
 	var req dto.SellerRequest
 	if err := c.ShouldBind(&req); err != nil {
 		sd.log.Errorf("[SellerDelivery] Bind Error: %v", err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "failed to bind JSON",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -46,7 +49,10 @@ func (sd *SellerHandler) RegisterSeller(c *gin.Context) {
 	seller, err := sd.sc.RegisterSeller(c.Request.Context(), req, jwt.ID, fileBytes)
 	if err != nil {
 		sd.log.Errorf("[SellerDelivery] Register Seller Error: %v", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to register seller",
+			"error":   err.Error(),
+		})
 		return
 	}
 	sd.log.Info("[SellerDelivery] Register Seller Success", seller)
@@ -73,7 +79,10 @@ func (sd *SellerHandler) UpdateSeller(c *gin.Context) {
 	var req dto.UpdateSellerRequest
 	if err := c.ShouldBind(&req); err != nil {
 		sd.log.Errorf("[SellerDelivery] Bind JSON Error: %v", err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "failed to bind JSON",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -81,7 +90,10 @@ func (sd *SellerHandler) UpdateSeller(c *gin.Context) {
 	seller, err := sd.sc.UpdateSeller(c.Request.Context(), req, jwt.ID, fileBytes)
 	if err != nil {
 		sd.log.Errorf("[SellerDelivery] Update Seller Error: %v", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to update seller",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -107,7 +119,10 @@ func (sd *SellerHandler) GetSeller(c *gin.Context) {
 	seller, err := sd.sc.GetSeller(c.Request.Context(), jwt.ID)
 	if err != nil {
 		sd.log.Errorf("[SellerDelivery] Get Seller Error: %v", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to get seller",
+			"error":   err.Error(),
+		})
 		return
 	}
 
