@@ -23,6 +23,24 @@ func NewProductHandler(pr usecase.ProductUsecaseContract, log *logrus.Logger) *P
 	}
 }
 
+func (ph *ProductHandler) GetAllProductsForBuyer(c *gin.Context) {
+	products, err := ph.pr.GetAllProductsForBuyer(c.Request.Context())
+	if err != nil {
+		ph.log.Errorf("[ProductDelivery] Get All Products Error: %v", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to get all products",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "products retrieved successfully",
+		"data":    products,
+	})
+}
+
 func (ph *ProductHandler) GetAllCategories(c *gin.Context) {
 	categories, err := ph.pr.GetAllCategories(c.Request.Context())
 	if err != nil {

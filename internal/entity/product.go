@@ -20,6 +20,7 @@ type Product struct {
 	UpdatedAt     time.Time        `json:"-" gorm:"autoUpdateTime;type:timestamptz"`
 	Variants      []ProductVariant `json:"variants,omitempty" gorm:"foreignKey:ProductID;references:ID"`
 	ProductImages []ProductImage   `json:"product_images,omitempty" gorm:"foreignKey:ProductID;references:ID"`
+	Seller        Seller           `json:"seller,omitempty" gorm:"foreignKey:SellerID;references:ID; omitempty"`
 }
 
 func (p *Product) TableName() string {
