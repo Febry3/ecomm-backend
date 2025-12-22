@@ -23,6 +23,24 @@ func NewProductHandler(pr usecase.ProductUsecaseContract, log *logrus.Logger) *P
 	}
 }
 
+func (ph *ProductHandler) GetProductByIDForBuyer(c *gin.Context) {
+	product, err := ph.pr.GetProductForBuyer(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		ph.log.Errorf("[ProductDelivery] Get Product Error: %v", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to get product",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "product retrieved successfully",
+		"data":    product,
+	})
+}
+
 func (ph *ProductHandler) GetAllProductsForBuyer(c *gin.Context) {
 	products, err := ph.pr.GetAllProductsForBuyer(c.Request.Context())
 	if err != nil {

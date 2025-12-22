@@ -22,12 +22,20 @@ func (p *ProductRepositoryPg) CreateProduct(ctx context.Context, product *entity
 }
 
 func (p *ProductRepositoryPg) DeleteProduct(ctx context.Context, productID string) error {
-	return p.db.WithContext(ctx).Delete(&entity.Product{}, productID).Error
+	return p.db.WithContext(ctx).Where("id = ?", productID).Delete(&entity.Product{}).Error
 }
 
 func (p *ProductRepositoryPg) GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error) {
 	var product entity.Product
-	err := p.db.WithContext(ctx).First(&product, productID).Error
+	err := p.db.WithContext(ctx).
+		Preload("Variants").
+		Preload("Variants.Stock").
+		Preload("ProductImages").
+		Preload("Seller", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "store_name", "store_slug", "logo_url")
+		}).
+		Where("id = ?", productID).
+		First(&product).Error
 	if err != nil {
 		return nil, err
 	}
