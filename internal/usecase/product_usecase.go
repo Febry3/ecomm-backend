@@ -18,7 +18,7 @@ import (
 
 type ProductUsecaseContract interface {
 	CreateProduct(ctx context.Context, request dto.CreateProductRequest, sellerID int64, files []*multipart.FileHeader) (*entity.Product, error)
-	GetAllProductsForBuyer(ctx context.Context) ([]entity.Product, error)
+	GetAllProductsForBuyer(ctx context.Context, limit int, cursor string) ([]entity.Product, error)
 	GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error)
 	GetAllProductsForSeller(ctx context.Context, sellerId int64) ([]entity.Product, int, int, float64, int, error)
 	GetProductForSeller(ctx context.Context, productID string, sellerId int64) (*entity.Product, error)
@@ -186,8 +186,8 @@ func (p *ProductUsecase) CreateProduct(ctx context.Context, request dto.CreatePr
 	return product, nil
 }
 
-func (p *ProductUsecase) GetAllProductsForBuyer(ctx context.Context) ([]entity.Product, error) {
-	return p.productRepo.GetProductsForBuyer(ctx)
+func (p *ProductUsecase) GetAllProductsForBuyer(ctx context.Context, limit int, cursor string) ([]entity.Product, error) {
+	return p.productRepo.GetProductsForBuyer(ctx, limit, cursor)
 }
 
 func (p *ProductUsecase) GetProductForBuyer(ctx context.Context, productID string) (*entity.Product, error) {

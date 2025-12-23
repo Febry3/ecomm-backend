@@ -91,6 +91,39 @@ type UpdateProductVariantRequest struct {
 	Stock     *ProductVariantStockRequest `json:"stock,omitempty"`
 }
 
+type GetProductsResponse struct {
+	Products []entity.Product `json:"products"`
+	Cursor   string           `json:"cursor,omitempty"`
+	HasMore  bool             `json:"has_more"`
+}
+
+func ToGetProductResponse(products []entity.Product, limit int) GetProductsResponse {
+	if len(products) == 0 {
+		return GetProductsResponse{
+			Products: []entity.Product{},
+			Cursor:   "",
+			HasMore:  false,
+		}
+	}
+
+	hasMore := len(products) > limit
+	resultProducts := products
+	if hasMore {
+		resultProducts = products[:limit]
+	}
+
+	var cursor string
+	if hasMore && len(resultProducts) > 0 {
+		cursor = resultProducts[len(resultProducts)-1].CreatedAt.UTC().Format("2006-01-02T15:04:05.000000Z")
+	}
+
+	return GetProductsResponse{
+		Products: resultProducts,
+		Cursor:   cursor,
+		HasMore:  hasMore,
+	}
+}
+
 // ToProductResponse converts a Product entity and its variants to ProductResponse DTO
 func ToProductResponse(product *entity.Product, variants []entity.ProductVariant) *ProductResponse {
 	variantResponses := make([]ProductVariantResponse, 0, len(variants))

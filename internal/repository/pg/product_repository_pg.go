@@ -42,14 +42,23 @@ func (p *ProductRepositoryPg) GetProductForBuyer(ctx context.Context, productID 
 	return &product, nil
 }
 
-func (p *ProductRepositoryPg) GetProductsForBuyer(ctx context.Context) ([]entity.Product, error) {
+func (p *ProductRepositoryPg) GetProductsForBuyer(ctx context.Context, limit int, cursor string) ([]entity.Product, error) {
 	var products []entity.Product
-	err := p.db.WithContext(ctx).Preload("Variants").
+	query := p.db.WithContext(ctx).Preload("Variants").
 		Preload("Variants.Stock").
 		Preload("ProductImages").
 		Preload("Seller", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "store_name", "store_slug", "logo_url")
-		}).Order("created_at DESC").Find(&products).Error
+		})
+
+	if cursor != "" {
+		query = query.Where("created_at < ?", cursor)
+	}
+
+	err := query.Order("created_at DESC").
+		Limit(limit + 1).
+		Find(&products).
+		Error
 	if err != nil {
 		return nil, err
 	}

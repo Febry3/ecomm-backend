@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/usecase"
@@ -42,7 +43,14 @@ func (ph *ProductHandler) GetProductByIDForBuyer(c *gin.Context) {
 }
 
 func (ph *ProductHandler) GetAllProductsForBuyer(c *gin.Context) {
-	products, err := ph.pr.GetAllProductsForBuyer(c.Request.Context())
+	cursor := c.Query("cursor")
+	limit, _ := strconv.Atoi(c.Query("limit"))
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	products, err := ph.pr.GetAllProductsForBuyer(c.Request.Context(), limit, cursor)
 	if err != nil {
 		ph.log.Errorf("[ProductDelivery] Get All Products Error: %v", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -55,7 +63,7 @@ func (ph *ProductHandler) GetAllProductsForBuyer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "products retrieved successfully",
-		"data":    products,
+		"data":    dto.ToGetProductResponse(products, 2),
 	})
 }
 
