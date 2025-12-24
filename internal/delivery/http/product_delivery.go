@@ -47,7 +47,7 @@ func (ph *ProductHandler) GetAllProductsForBuyer(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.Query("limit"))
 
 	if limit == 0 {
-		limit = 2
+		limit = 10
 	}
 
 	products, err := ph.pr.GetAllProductsForBuyer(c.Request.Context(), limit, cursor)

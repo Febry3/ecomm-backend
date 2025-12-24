@@ -11,8 +11,11 @@ RUN go mod download
 
 COPY . .
 
-# Build the application
+# Build the HTTP server
 RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/server/main.go
+
+# Build the Asynq worker
+RUN CGO_ENABLED=0 GOOS=linux go build -o worker ./cmd/workers/main.go
 
 # Final stage
 FROM alpine:latest
@@ -23,6 +26,7 @@ WORKDIR /app
 RUN apk --no-cache add ca-certificates
 
 COPY --from=builder /app/server .
+COPY --from=builder /app/worker .
 
 # Expose the application port
 EXPOSE 8080

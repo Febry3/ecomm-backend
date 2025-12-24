@@ -9,8 +9,27 @@ services:
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
+      - REDIS_ADDR=redis:6379
     depends_on:
       - postgres
+      - redis
+    restart: always
+    networks:
+      - gamingin-network
+
+  worker:
+    build: .
+    container_name: gamingin-worker
+    command: ["./worker"]
+    env_file:
+      - .env
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - postgres
+      - redis
     restart: always
     networks:
       - gamingin-network
@@ -32,9 +51,34 @@ services:
     networks:
       - gamingin-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: gamingin-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    networks:
+      - gamingin-network
+
+  asynqmon:
+    image: hibiken/asynqmon
+    container_name: gamingin-asynqmon
+    ports:
+      - "8081:8080"
+    environment:
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - gamingin-network
+
 networks:
   gamingin-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  redis_data:
