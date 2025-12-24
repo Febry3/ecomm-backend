@@ -31,12 +31,17 @@ func main() {
 		}
 	}()
 
+	// Initialize Asynq client
+	asynqConfig := config.NewAsynqConfig(viperConfig)
+	asynqClient := config.NewAsynqClient(asynqConfig, log)
+	defer asynqClient.Close()
 
 	config.Bootstrap(&config.BootstrapConfig{
-		Log:    log,
-		App:    app,
-		Config: viperConfig,
-		DB:     db,
+		Log:         log,
+		App:         app,
+		Config:      viperConfig,
+		DB:          db,
+		AsynqClient: asynqClient,
 	})
 
 	port := viperConfig.GetInt("app.port")

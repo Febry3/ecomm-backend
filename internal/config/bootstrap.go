@@ -9,16 +9,18 @@ import (
 	"github.com/febry3/gamingin/internal/repository/pg"
 	"github.com/febry3/gamingin/internal/usecase"
 	"github.com/gin-gonic/gin"
+	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
 type BootstrapConfig struct {
-	DB     *gorm.DB
-	App    *gin.Engine
-	Log    *logrus.Logger
-	Config *viper.Viper
+	DB          *gorm.DB
+	App         *gin.Engine
+	Log         *logrus.Logger
+	Config      *viper.Viper
+	AsynqClient *asynq.Client
 }
 
 func Bootstrap(config *BootstrapConfig) {
@@ -63,7 +65,7 @@ func Bootstrap(config *BootstrapConfig) {
 	addressUsecase := usecase.NewAddressUsecase(addressRepository, userRepository, config.Log)
 	sellerUsecase := usecase.NewSellerUsecase(sellerRepository, userRepository, txManager, config.Log, storage)
 	productUsecase := usecase.NewProductUsecase(productRepository, variantRepository, stockRepository, sellerRepository, categoryRepository, productImageRepository, storage, txManager, config.Log)
-	groupBuyUsecase := usecase.NewGroupBuyUsecase(groupBuySessionRepository, groupBuyTierRepository, productRepository, variantRepository, txManager, config.Log)
+	groupBuyUsecase := usecase.NewGroupBuyUsecase(groupBuySessionRepository, groupBuyTierRepository, productRepository, variantRepository, txManager, config.Log, config.AsynqClient)
 
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)

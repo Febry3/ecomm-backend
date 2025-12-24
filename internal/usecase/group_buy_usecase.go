@@ -7,7 +7,9 @@ import (
 	"github.com/febry3/gamingin/internal/entity"
 	"github.com/febry3/gamingin/internal/errorx"
 	"github.com/febry3/gamingin/internal/repository"
+	"github.com/febry3/gamingin/internal/worker/tasks"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,6 +20,7 @@ type GroupBuyUsecaseContract interface {
 	GetAllGroupBuySessionForSeller(ctx context.Context, sellerID int64) ([]entity.GroupBuySession, error)
 	GetAllGroupBuySessionForBuyer(ctx context.Context) ([]entity.GroupBuySession, error)
 	ChangeGroupBuySessionStatus(ctx context.Context, sessionID string, status string, sellerID int64) error
+	EndSession(ctx context.Context, sessionID string, productVariantID string, sellerID int64) error
 }
 
 type GroupBuyUsecase struct {
@@ -27,9 +30,10 @@ type GroupBuyUsecase struct {
 	productVariantRepo  repository.ProductVariantRepository
 	tx                  repository.TxManager
 	log                 *logrus.Logger
+	asynqClient         *asynq.Client
 }
 
-func NewGroupBuyUsecase(groupBuySessionRepo repository.GroupBuySessionRepository, groupBuyTierRepo repository.GroupBuyTierRepository, productRepo repository.ProductRepository, productVariantRepo repository.ProductVariantRepository, tx repository.TxManager, log *logrus.Logger) GroupBuyUsecaseContract {
+func NewGroupBuyUsecase(groupBuySessionRepo repository.GroupBuySessionRepository, groupBuyTierRepo repository.GroupBuyTierRepository, productRepo repository.ProductRepository, productVariantRepo repository.ProductVariantRepository, tx repository.TxManager, log *logrus.Logger, asynqClient *asynq.Client) GroupBuyUsecaseContract {
 	return &GroupBuyUsecase{
 		groupBuySessionRepo: groupBuySessionRepo,
 		groupBuyTierRepo:    groupBuyTierRepo,
@@ -37,6 +41,7 @@ func NewGroupBuyUsecase(groupBuySessionRepo repository.GroupBuySessionRepository
 		productVariantRepo:  productVariantRepo,
 		tx:                  tx,
 		log:                 log,
+		asynqClient:         asynqClient,
 	}
 }
 
@@ -98,6 +103,23 @@ func (g *GroupBuyUsecase) CreateGroupBuySession(ctx context.Context, request *dt
 		return &dto.GroupBuySessionResponse{}, err
 	}
 
+	task, err := tasks.NewGroupBuySessionEndTask(tasks.GroupBuySessionEndPayload{
+		SessionID:        groupBuySession.ID,
+		ProductVariantID: groupBuySession.ProductVariantID,
+		SellerID:         sellerID,
+	})
+
+	if err != nil {
+		g.log.Errorf("failed to create session end task: %v", err)
+	} else {
+		_, err = g.asynqClient.Enqueue(task, asynq.ProcessAt(groupBuySession.ExpiresAt))
+		if err != nil {
+			g.log.Errorf("failed to enqueue session end task: %v", err)
+		} else {
+			g.log.Infof("Scheduled session end task for session %s at %v", groupBuySession.ID, groupBuySession.ExpiresAt)
+		}
+	}
+
 	return &dto.GroupBuySessionResponse{
 		ID:               groupBuySession.ID,
 		ProductVariantID: groupBuySession.ProductVariantID,
@@ -128,4 +150,33 @@ func (g *GroupBuyUsecase) GetAllGroupBuySessionForBuyer(ctx context.Context) ([]
 
 func (g *GroupBuyUsecase) ChangeGroupBuySessionStatus(ctx context.Context, sessionID string, status string, sellerID int64) error {
 	return g.groupBuySessionRepo.ChangeStatus(ctx, sessionID, status, sellerID)
+}
+
+func (g *GroupBuyUsecase) EndSession(ctx context.Context, sessionID string, productVariantID string, sellerID int64) error {
+	session, err := g.groupBuySessionRepo.FindByID(ctx, sessionID)
+	if err != nil {
+		g.log.Errorf("failed to find session: %v", err)
+		return err
+	}
+
+	if session.Status != "active" {
+		g.log.Infof("Session %s is already %s, skipping", sessionID, session.Status)
+		return nil
+	}
+
+	productVariant, err := g.productVariantRepo.GetProductVariant(ctx, productVariantID)
+	if err != nil {
+		g.log.Errorf("failed to get product variant: %v", err)
+		return err
+	}
+
+	err = g.groupBuySessionRepo.ChangeStatus(ctx, sessionID, "completed", sellerID)
+	if err != nil {
+		g.log.Errorf("failed to change session status: %v", err)
+		return err
+	}
+
+	g.log.Infof("Group buy session %s completed successfully. Product: %s", sessionID, productVariant.ID)
+
+	return nil
 }

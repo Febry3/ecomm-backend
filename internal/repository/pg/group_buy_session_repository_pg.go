@@ -56,9 +56,9 @@ func (g *GroupBuySessionRepositoryPg) Delete(ctx context.Context, sessionID stri
 }
 
 func (g *GroupBuySessionRepositoryPg) FindByID(ctx context.Context, sessionID string) (*entity.GroupBuySession, error) {
-	var tier entity.GroupBuySession
-	if err := g.db.Preload("Seller").Preload("ProductVariant").Preload("GroupBuyTiers").First(&tier, sessionID).Error; err != nil {
+	var session entity.GroupBuySession
+	if err := g.db.WithContext(ctx).Preload("ProductVariant").Preload("GroupBuyTiers").Where("id = ?", sessionID).First(&session).Error; err != nil {
 		return nil, err
 	}
-	return &tier, nil
+	return &session, nil
 }
