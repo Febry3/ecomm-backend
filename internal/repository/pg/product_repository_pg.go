@@ -30,6 +30,9 @@ func (p *ProductRepositoryPg) GetProductForBuyer(ctx context.Context, productID 
 	err := p.db.WithContext(ctx).
 		Preload("Variants").
 		Preload("Variants.Stock").
+		Preload("Variants.GroupBuySessions", "status = 'active'", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "product_variant_id", "seller_id", "expires_at")
+		}).
 		Preload("ProductImages").
 		Preload("Seller", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "store_name", "store_slug", "logo_url")
