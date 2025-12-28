@@ -40,3 +40,9 @@ type ChangeStatusRequest struct {
 	SessionID string `json:"session_id" binding:"required"`
 	Status    string `json:"status" binding:"required"`
 }
+
+type CreateBuyerGroupSessionRequest struct {
+	OrganizerUserID  int64  `json:"organizer_user_id" binding:"required"`
+	ProductVariantID string `json:"product_variant_id" binding:"required"`
+	Title            string `json:"title" binding:"required"`
+}

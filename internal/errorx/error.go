@@ -19,7 +19,8 @@ var (
 	ErrInsufficientStock = errors.New("product variant stock is not enough")
 
 	// related to group buying feature
-	ErrConflict      = errors.New("failed to purcase")
-	ErrNoStock       = errors.New("no stock available")
-	ErrSessionClosed = errors.New("session already closed")
+	ErrConflict              = errors.New("failed to purcase")
+	ErrNoStock               = errors.New("no stock available")
+	ErrSessionClosed         = errors.New("session already closed")
+	ErrSessionAlreadyStarted = errors.New("you already started a session")
 )

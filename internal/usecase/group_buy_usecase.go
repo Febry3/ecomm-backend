@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/febry3/gamingin/internal/dto"
 	"github.com/febry3/gamingin/internal/entity"
@@ -24,24 +25,26 @@ type GroupBuyUsecaseContract interface {
 }
 
 type GroupBuyUsecase struct {
-	groupBuySessionRepo repository.GroupBuySessionRepository
-	groupBuyTierRepo    repository.GroupBuyTierRepository
-	productRepo         repository.ProductRepository
-	productVariantRepo  repository.ProductVariantRepository
-	tx                  repository.TxManager
-	log                 *logrus.Logger
-	asynqClient         *asynq.Client
+	groupBuySessionRepo   repository.GroupBuySessionRepository
+	groupBuyTierRepo      repository.GroupBuyTierRepository
+	productRepo           repository.ProductRepository
+	productVariantRepo    repository.ProductVariantRepository
+	buyerGroupSessionRepo repository.BuyerGroupBuySessionRepository
+	tx                    repository.TxManager
+	log                   *logrus.Logger
+	asynqClient           *asynq.Client
 }
 
-func NewGroupBuyUsecase(groupBuySessionRepo repository.GroupBuySessionRepository, groupBuyTierRepo repository.GroupBuyTierRepository, productRepo repository.ProductRepository, productVariantRepo repository.ProductVariantRepository, tx repository.TxManager, log *logrus.Logger, asynqClient *asynq.Client) GroupBuyUsecaseContract {
+func NewGroupBuyUsecase(groupBuySessionRepo repository.GroupBuySessionRepository, groupBuyTierRepo repository.GroupBuyTierRepository, productRepo repository.ProductRepository, productVariantRepo repository.ProductVariantRepository, buyerGroupSessionRepo repository.BuyerGroupBuySessionRepository, tx repository.TxManager, log *logrus.Logger, asynqClient *asynq.Client) GroupBuyUsecaseContract {
 	return &GroupBuyUsecase{
-		groupBuySessionRepo: groupBuySessionRepo,
-		groupBuyTierRepo:    groupBuyTierRepo,
-		productRepo:         productRepo,
-		productVariantRepo:  productVariantRepo,
-		tx:                  tx,
-		log:                 log,
-		asynqClient:         asynqClient,
+		groupBuySessionRepo:   groupBuySessionRepo,
+		groupBuyTierRepo:      groupBuyTierRepo,
+		productRepo:           productRepo,
+		productVariantRepo:    productVariantRepo,
+		buyerGroupSessionRepo: buyerGroupSessionRepo,
+		tx:                    tx,
+		log:                   log,
+		asynqClient:           asynqClient,
 	}
 }
 
@@ -179,4 +182,38 @@ func (g *GroupBuyUsecase) EndSession(ctx context.Context, sessionID string, prod
 	g.log.Infof("Group buy session %s completed successfully. Product: %s", sessionID, productVariant.ID)
 
 	return nil
+}
+
+func (g *GroupBuyUsecase) CreateSessionForBuyer(ctx context.Context, request dto.CreateBuyerGroupSessionRequest) error {
+	session, err := g.buyerGroupSessionRepo.GetSessionByOrganizerUserID(ctx, request.OrganizerUserID)
+	if err != nil {
+		g.log.Errorf("[GroupBuyUsecase] Failed to get session: %v", err)
+		return err
+	}
+
+	if session != nil {
+		g.log.Infof("[GroupBuyUsecase] You already started a session")
+		return errorx.ErrSessionAlreadyStarted
+	}
+
+	buyerGroupSession := &entity.BuyerGroupSession{
+		ProductVariantID:    request.ProductVariantID,
+		OrganizerUserID:     request.OrganizerUserID,
+		Title:               request.Title,
+		SessionCode:         "GB" + uuid.New().String()[:8],
+		ExpiresAt:           time.Now().Add(time.Hour * 1),
+		CurrentParticipants: 1,
+		Status:              "open",
+	}
+
+	if err := g.buyerGroupSessionRepo.Create(ctx, buyerGroupSession); err != nil {
+		g.log.Errorf("[GroupBuyUsecase] Failed to create session: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (g *GroupBuyUsecase) GetSessionForBuyerByCode(ctx context.Context, sessionCode string) (*entity.BuyerGroupSession, error) {
+	return g.buyerGroupSessionRepo.GetSessionByCode(ctx, sessionCode)
 }
