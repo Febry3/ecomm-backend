@@ -58,7 +58,7 @@ func (a *AddressUsecase) Create(ctx context.Context, request dto.AddressRequest,
 		Province:      request.Province,
 		PostalCode:    request.PostalCode,
 		Notes:         request.Notes,
-		IsDefault:     true,
+		IsDefault:     request.IsDefault,
 		AddressLabel:  request.AddressLabel,
 		ReceiverName:  request.ReceiverName,
 	})

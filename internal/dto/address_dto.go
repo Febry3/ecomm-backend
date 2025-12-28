@@ -10,14 +10,15 @@ type AddressRequest struct {
 	ReceiverName  string `validate:"required" json:"receiver_name"`
 	AddressLabel  string `validate:"required" json:"address_label"`
 	StreetAddress string `validate:"required" json:"street_address"`
-	RT            string `validate:"required" json:"rt"`
-	RW            string `validate:"required" json:"rw"`
+	RT            string `validate:"omitempty" json:"rt"`
+	RW            string `validate:"omitempty" json:"rw"`
 	Village       string `validate:"required" json:"village"`
 	District      string `validate:"required" json:"district"`
 	City          string `validate:"required" json:"city"`
 	Province      string `validate:"required" json:"province"`
 	PostalCode    string `validate:"required" json:"postal_code"`
-	Notes         string `validate:"required" json:"notes"`
+	Notes         string `validate:"omitempty" json:"notes"`
+	IsDefault     bool   `validate:"omitempty" json:"is_default"`
 }
 
 type AddressResponse struct {
@@ -72,5 +73,9 @@ func (req *AddressRequest) UpdateEntity(a *entity.Address) {
 	}
 	if req.Notes != "" {
 		a.Notes = req.Notes
+	}
+
+	if !req.IsDefault {
+		a.IsDefault = req.IsDefault
 	}
 }
