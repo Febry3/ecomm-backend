@@ -13,7 +13,7 @@ type ProductVariant struct {
 	UpdatedAt        time.Time            `json:"-" gorm:"autoUpdateTime;type:timestamptz"`
 	Stock            *ProductVariantStock `json:"stock,omitempty" gorm:"foreignKey:ProductVariantID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Product          *Product             `json:"product,omitempty" gorm:"foreignKey:ProductID;references:ID"`
-	GroupBuySessions []GroupBuySession    `json:"group_buy_sessions,omitempty" gorm:"foreignKey:ProductVariantID;references:ID"`
+	GroupBuySessions *GroupBuySession     `json:"group_buy_sessions,omitempty" gorm:"foreignKey:ProductVariantID;references:ID"`
 }
 
 func (pv *ProductVariant) TableName() string {

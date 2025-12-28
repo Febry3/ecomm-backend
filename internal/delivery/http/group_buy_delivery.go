@@ -138,3 +138,42 @@ func (gh *GroupBuyHandler) CreateGroupBuySession(c *gin.Context) {
 		"data":    response,
 	})
 }
+
+func (gh *GroupBuyHandler) CreateBuyerSession(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		gh.log.Error("[ProductDelivery] No User in Context")
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "unauthorized",
+			"error":   "unauthorized user",
+		})
+		return
+	}
+	jwt := v.(*dto.JwtPayload)
+
+	var req dto.CreateBuyerGroupSessionRequest
+	req.OrganizerUserID = jwt.ID
+	if err := c.ShouldBind(&req); err != nil {
+		gh.log.Error("[ProductDelivery] CreateBuyerSession failed: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to create buyer session",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	err := gh.pu.CreateBuyerSession(c.Request.Context(), &req)
+	if err != nil {
+		gh.log.Error("[ProductDelivery] CreateBuyerSession failed: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to create buyer session",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "success",
+	})
+}

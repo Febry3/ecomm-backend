@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/febry3/gamingin/internal/dto"
@@ -12,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type GroupBuyUsecaseContract interface {
@@ -22,6 +24,7 @@ type GroupBuyUsecaseContract interface {
 	GetAllGroupBuySessionForBuyer(ctx context.Context) ([]entity.GroupBuySession, error)
 	ChangeGroupBuySessionStatus(ctx context.Context, sessionID string, status string, sellerID int64) error
 	EndSession(ctx context.Context, sessionID string, productVariantID string, sellerID int64) error
+	CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) error
 }
 
 type GroupBuyUsecase struct {
@@ -71,13 +74,11 @@ func (g *GroupBuyUsecase) CreateGroupBuySession(ctx context.Context, request *dt
 			return err
 		}
 
-		sessionCode := "JMK" + uuid.New().String()[:8]
 		groupBuySession = &entity.GroupBuySession{
 			ProductVariantID: request.ProductVariantID,
 			SellerID:         sellerID,
 			MinParticipants:  request.MinParticipants,
 			MaxParticipants:  request.MaxParticipants,
-			SessionCode:      sessionCode,
 			ExpiresAt:        request.ExpiresAt,
 		}
 
@@ -129,7 +130,6 @@ func (g *GroupBuyUsecase) CreateGroupBuySession(ctx context.Context, request *dt
 		SellerID:         groupBuySession.SellerID,
 		MinParticipants:  groupBuySession.MinParticipants,
 		MaxParticipants:  groupBuySession.MaxParticipants,
-		SessionCode:      groupBuySession.SessionCode,
 		ExpiresAt:        groupBuySession.ExpiresAt,
 		Tiers:            tiers,
 	}, nil
@@ -184,9 +184,10 @@ func (g *GroupBuyUsecase) EndSession(ctx context.Context, sessionID string, prod
 	return nil
 }
 
-func (g *GroupBuyUsecase) CreateSessionForBuyer(ctx context.Context, request dto.CreateBuyerGroupSessionRequest) error {
+func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) error {
 	session, err := g.buyerGroupSessionRepo.GetSessionByOrganizerUserID(ctx, request.OrganizerUserID)
-	if err != nil {
+	g.log.Infof("[GroupBuyUsecase] Session: %v", session)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		g.log.Errorf("[GroupBuyUsecase] Failed to get session: %v", err)
 		return err
 	}
@@ -194,6 +195,11 @@ func (g *GroupBuyUsecase) CreateSessionForBuyer(ctx context.Context, request dto
 	if session != nil {
 		g.log.Infof("[GroupBuyUsecase] You already started a session")
 		return errorx.ErrSessionAlreadyStarted
+	}
+
+	if err := g.groupBuySessionRepo.FindByProductVariantID(ctx, request.ProductVariantID); err != nil {
+		g.log.Infof("[GroupBuyUsecase] Group buy session not found for product variant %s", request.ProductVariantID)
+		return errorx.ErrGroupBuySessionNotFound
 	}
 
 	buyerGroupSession := &entity.BuyerGroupSession{

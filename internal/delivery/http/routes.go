@@ -48,16 +48,21 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		product.GET("/:id", routeConfig.Product.GetProductByIDForBuyer)
 	}
 
-	protected := v1.Group("/user", middleware.AuthMiddleware(jwt))
+	protected := v1.Group("/", middleware.AuthMiddleware(jwt))
 	{
-		protected.GET("/test", testUserInline)
-		protected.PUT("", routeConfig.User.UpdateUserProfile)
-		protected.GET("", routeConfig.User.GetUserProfile)
-		protected.POST("/avatar", routeConfig.User.UpdateUserAvatar)
-		protected.GET("/address", routeConfig.Address.GetAll)
-		protected.POST("/address", routeConfig.Address.Create)
-		protected.PUT("/address/:id", routeConfig.Address.Update)
-		protected.DELETE("/address/:id", routeConfig.Address.Delete)
+		protected.POST("group-buy", routeConfig.GroupBuy.CreateBuyerSession)
+	}
+
+	protectedUser := v1.Group("/user", middleware.AuthMiddleware(jwt))
+	{
+		protectedUser.GET("/test", testUserInline)
+		protectedUser.PUT("", routeConfig.User.UpdateUserProfile)
+		protectedUser.GET("", routeConfig.User.GetUserProfile)
+		protectedUser.POST("/avatar", routeConfig.User.UpdateUserAvatar)
+		protectedUser.GET("/address", routeConfig.Address.GetAll)
+		protectedUser.POST("/address", routeConfig.Address.Create)
+		protectedUser.PUT("/address/:id", routeConfig.Address.Update)
+		protectedUser.DELETE("/address/:id", routeConfig.Address.Delete)
 	}
 
 	protectedSeller := v1.Group("/seller", middleware.AuthMiddleware(jwt))

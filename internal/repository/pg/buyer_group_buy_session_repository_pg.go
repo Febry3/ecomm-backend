@@ -32,9 +32,10 @@ func (b *BuyerGroupBuySessionRepositoryPg) GetSessionByCode(ctx context.Context,
 }
 
 func (b *BuyerGroupBuySessionRepositoryPg) GetSessionByOrganizerUserID(ctx context.Context, organizerUserID int64) (*entity.BuyerGroupSession, error) {
-	var session entity.BuyerGroupSession
-	if err := b.db.WithContext(ctx).Where("organizer_user_id = ? AND status = 'active'", organizerUserID).First(&session).Error; err != nil {
+	var session *entity.BuyerGroupSession
+
+	if err := b.db.WithContext(ctx).Where("organizer_user_id = ? AND status = ?", organizerUserID, "open").First(&session).Error; err != nil {
 		return nil, err
 	}
-	return &session, nil
+	return session, nil
 }
