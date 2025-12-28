@@ -7,6 +7,8 @@ type InventoryLedger struct {
 	ProductVariantID string          `json:"product_variant_id" gorm:"type:uuid;not null"`
 	QuantityChange   int             `json:"quantity_change" gorm:"not null"`
 	Reason           string          `json:"reason" gorm:"not null"`
+	ReferenceType    string          `json:"reference_type" gorm:"default:null"`
+	ReferenceID      *string         `json:"reference_id" gorm:"type:uuid;default:null"`
 	OrderID          *string         `json:"order_id" gorm:"type:uuid;default:null"`
 	CreatedAt        time.Time       `json:"created_at" gorm:"autoCreateTime;type:timestamptz"`
 	ProductVariant   *ProductVariant `json:"product_variant,omitempty" gorm:"foreignKey:ProductVariantID;references:ID"`

@@ -7,6 +7,7 @@ type ProductVariantStock struct {
 	CurrentStock      int             `json:"current_stock" gorm:"default:0"`
 	ReservedStock     int             `json:"reserved_stock" gorm:"default:0"`
 	LowStockThreshold int             `json:"low_stock_threshold" gorm:"default:5"`
+	Version           int             `json:"version" gorm:"default:1"`
 	LastUpdated       time.Time       `json:"last_updated" gorm:"autoUpdateTime;type:timestamptz"`
 	ProductVariant    *ProductVariant `json:"product_variant,omitempty" gorm:"foreignKey:ProductVariantID;references:ID"`
 }

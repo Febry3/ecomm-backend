@@ -16,6 +16,7 @@ import (
 func main() {
 	log := config.NewLogrus()
 	viperConfig := config.NewViper(log)
+	email := config.NewEmail(viperConfig)
 
 	// Initialize database for worker
 	db, err := config.NewGorm(viperConfig, log)
@@ -30,7 +31,7 @@ func main() {
 	productVariantRepo := pg.NewProductVariantRepositoryPg(db)
 	txManager := pg.NewTxManager(db)
 
-	// Initialize usecase (asynqClient is nil since worker doesn't enqueue tasks)
+	// Initialize usecase (asynqClient is nil since worker doesn't enqueue tasks from usecase)
 	groupBuyUsecase := usecase.NewGroupBuyUsecase(
 		groupBuySessionRepo,
 		groupBuyTierRepo,
@@ -38,21 +39,27 @@ func main() {
 		productVariantRepo,
 		txManager,
 		log,
-		nil, // Worker doesn't need to enqueue tasks
+		nil,
 	)
-
-	// Initialize handler with usecase
-	groupBuyHandler := worker.NewGroupBuySessionHandler(groupBuyUsecase, log)
 
 	// Initialize Asynq
 	asynqConfig := config.NewAsynqConfig(viperConfig)
+	asynqClient := config.NewAsynqClient(asynqConfig, log)
+	defer asynqClient.Close()
+
+	// Initialize handler with usecase and asynq client for task chaining
+	groupBuyHandler := worker.NewGroupBuySessionHandler(groupBuyUsecase, asynqClient, email, log)
+
 	srv := config.NewAsynqServer(asynqConfig, log)
 	mux := asynq.NewServeMux()
 
 	// Register task handlers
 	mux.HandleFunc(tasks.TypeEmailDelivery, tasks.HandleEmailDeliveryTask)
 	mux.HandleFunc(tasks.TypeWelcomeEmail, tasks.HandleWelcomeEmailTask)
+
+	// Group Buy related
 	mux.HandleFunc(tasks.TypeGroupBuySessionEnd, groupBuyHandler.HandleSessionEnd)
+	mux.HandleFunc(tasks.TypeGroupBuySessionEndMail, groupBuyHandler.HandleSessionEndMail)
 
 	// Handle graceful shutdown
 	go func() {
