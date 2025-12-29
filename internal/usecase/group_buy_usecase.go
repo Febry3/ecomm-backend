@@ -24,7 +24,7 @@ type GroupBuyUsecaseContract interface {
 	GetAllGroupBuySessionForBuyer(ctx context.Context) ([]entity.GroupBuySession, error)
 	ChangeGroupBuySessionStatus(ctx context.Context, sessionID string, status string, sellerID int64) error
 	EndSession(ctx context.Context, sessionID string, productVariantID string, sellerID int64) error
-	CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) error
+	CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) (string, error)
 }
 
 type GroupBuyUsecase struct {
@@ -184,29 +184,29 @@ func (g *GroupBuyUsecase) EndSession(ctx context.Context, sessionID string, prod
 	return nil
 }
 
-func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) error {
+func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) (string, error) {
 	session, err := g.buyerGroupSessionRepo.GetSessionByOrganizerUserID(ctx, request.OrganizerUserID)
 	g.log.Infof("[GroupBuyUsecase] Session: %v", session)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		g.log.Errorf("[GroupBuyUsecase] Failed to get session: %v", err)
-		return err
+		return "", err
 	}
 
 	if session != nil {
 		g.log.Infof("[GroupBuyUsecase] You already started a session")
-		return errorx.ErrSessionAlreadyStarted
+		return "", errorx.ErrSessionAlreadyStarted
 	}
 
 	if err := g.groupBuySessionRepo.FindByProductVariantID(ctx, request.ProductVariantID); err != nil {
 		g.log.Infof("[GroupBuyUsecase] Group buy session not found for product variant %s", request.ProductVariantID)
-		return errorx.ErrGroupBuySessionNotFound
+		return "", errorx.ErrGroupBuySessionNotFound
 	}
 
 	buyerGroupSession := &entity.BuyerGroupSession{
 		ProductVariantID:    request.ProductVariantID,
 		OrganizerUserID:     request.OrganizerUserID,
 		Title:               request.Title,
-		SessionCode:         "GB" + uuid.New().String()[:8],
+		SessionCode:         "LBX" + uuid.New().String()[:8],
 		ExpiresAt:           time.Now().Add(time.Hour * 1),
 		CurrentParticipants: 1,
 		Status:              "open",
@@ -214,10 +214,10 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 
 	if err := g.buyerGroupSessionRepo.Create(ctx, buyerGroupSession); err != nil {
 		g.log.Errorf("[GroupBuyUsecase] Failed to create session: %v", err)
-		return err
+		return "", err
 	}
 
-	return nil
+	return buyerGroupSession.SessionCode, nil
 }
 
 func (g *GroupBuyUsecase) GetSessionForBuyerByCode(ctx context.Context, sessionCode string) (*entity.BuyerGroupSession, error) {

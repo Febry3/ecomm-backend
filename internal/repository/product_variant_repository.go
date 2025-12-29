@@ -12,4 +12,5 @@ type ProductVariantRepository interface {
 	GetProductVariant(ctx context.Context, productVariantID string) (*entity.ProductVariant, error)
 	GetProductVariants(ctx context.Context, productID string) ([]entity.ProductVariant, error)
 	UpdateProductVariant(ctx context.Context, productVariant *entity.ProductVariant, productVariantID string) error
+	GetProductVariantByID(ctx context.Context, productVariantID string) (*entity.ProductVariant, error)
 }

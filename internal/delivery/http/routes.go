@@ -46,6 +46,7 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		product.GET("/categories", routeConfig.Product.GetAllCategories)
 		product.GET("", routeConfig.Product.GetAllProductsForBuyer)
 		product.GET("/:id", routeConfig.Product.GetProductByIDForBuyer)
+		product.GET("/variants/:id", routeConfig.Product.GetProductVariantByID)
 	}
 
 	protected := v1.Group("/", middleware.AuthMiddleware(jwt))

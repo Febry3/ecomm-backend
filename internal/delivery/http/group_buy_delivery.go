@@ -162,7 +162,7 @@ func (gh *GroupBuyHandler) CreateBuyerSession(c *gin.Context) {
 		return
 	}
 
-	err := gh.pu.CreateBuyerSession(c.Request.Context(), &req)
+	sessCode, err := gh.pu.CreateBuyerSession(c.Request.Context(), &req)
 	if err != nil {
 		gh.log.Error("[ProductDelivery] CreateBuyerSession failed: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -174,6 +174,9 @@ func (gh *GroupBuyHandler) CreateBuyerSession(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
-		"message": "success",
+		"message": "session created successfully",
+		"data": gin.H{
+			"session_code": sessCode,
+		},
 	})
 }

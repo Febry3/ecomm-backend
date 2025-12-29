@@ -304,3 +304,21 @@ func (ph *ProductHandler) UpdateProduct(c *gin.Context) {
 		"data":    product,
 	})
 }
+
+func (ph *ProductHandler) GetProductVariantByID(c *gin.Context) {
+	productVariant, err := ph.pr.GetProductVariantByID(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		ph.log.Errorf("[ProductDelivery] Get Product Variant Error: %v", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to get product variant",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "product variant retrieved successfully",
+		"data":    productVariant,
+	})
+}

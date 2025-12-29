@@ -25,6 +25,7 @@ type ProductUsecaseContract interface {
 	UpdateProduct(ctx context.Context, product dto.UpdateProductRequest, productID string, sellerID int64, files []*multipart.FileHeader) (*dto.ProductResponse, error)
 	GetAllCategories(ctx context.Context) ([]dto.CategoryResponse, error)
 	DeleteProductVariant(ctx context.Context, productVariantID string, sellerID int64) error
+	GetProductVariantByID(ctx context.Context, productVariantID string) (*entity.ProductVariant, error)
 }
 
 type ProductUsecase struct {
@@ -226,6 +227,10 @@ func (p *ProductUsecase) GetProductForSeller(ctx context.Context, productID stri
 	}
 
 	return product, nil
+}
+
+func (p *ProductUsecase) GetProductVariantByID(ctx context.Context, productVariantID string) (*entity.ProductVariant, error) {
+	return p.variantRepo.GetProductVariantByID(ctx, productVariantID)
 }
 
 func (p *ProductUsecase) DeleteProductVariant(ctx context.Context, productVariantID string, sellerID int64) error {

@@ -47,3 +47,12 @@ func (p *ProductVariantRepository) UpdateProductVariant(ctx context.Context, pro
 	db := TxFromContext(ctx, p.db)
 	return db.Model(&entity.ProductVariant{}).Where("id = ?", productVariantID).Updates(productVariant).Error
 }
+
+func (p *ProductVariantRepository) GetProductVariantByID(ctx context.Context, productVariantID string) (*entity.ProductVariant, error) {
+	var productVariant entity.ProductVariant
+	err := p.db.WithContext(ctx).Where("id = ?", productVariantID).First(&productVariant).Error
+	if err != nil {
+		return nil, err
+	}
+	return &productVariant, nil
+}

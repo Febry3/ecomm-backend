@@ -19,6 +19,7 @@ func NewBuyerGroupBuySessionRepositoryPg(db *gorm.DB) repository.BuyerGroupBuySe
 func (b *BuyerGroupBuySessionRepositoryPg) Create(ctx context.Context, session *entity.BuyerGroupSession) error {
 	return b.db.WithContext(ctx).Create(session).Error
 }
+
 func (b *BuyerGroupBuySessionRepositoryPg) Delete(ctx context.Context, sessionID string) error {
 	return b.db.WithContext(ctx).Delete(&entity.BuyerGroupSession{}, sessionID).Error
 }
