@@ -52,6 +52,7 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 	protected := v1.Group("/", middleware.AuthMiddleware(jwt))
 	{
 		protected.POST("group-buy", routeConfig.GroupBuy.CreateBuyerSession)
+		protected.GET("group-buy/:sessionId", routeConfig.GroupBuy.GetSessionForBuyerByCode)
 	}
 
 	protectedUser := v1.Group("/user", middleware.AuthMiddleware(jwt))

@@ -4,6 +4,7 @@ import "time"
 
 type BuyerGroupSession struct {
 	ID                  string    `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	SessionID           string    `json:"session_id" gorm:"type:uuid;not null"`
 	SessionCode         string    `json:"session_code" gorm:"not null;uniqueIndex"`
 	OrganizerUserID     int64     `json:"organizer_user_id" gorm:"not null"`
 	ProductVariantID    string    `json:"product_variant_id" gorm:"type:uuid;not null"`
@@ -17,7 +18,7 @@ type BuyerGroupSession struct {
 	// Relationships
 	Organizer      *User              `json:"organizer,omitempty" gorm:"foreignKey:OrganizerUserID;references:ID"`
 	ProductVariant *ProductVariant    `json:"product_variant,omitempty" gorm:"foreignKey:ProductVariantID;references:ID"`
-	Members        []BuyerGroupMember `json:"members,omitempty" gorm:"foreignKey:SessionID;references:ID"`
+	Members        []BuyerGroupMember `json:"members,omitempty" gorm:"foreignKey:SessionID;references:ID;constraint:-;"`
 }
 
 func (bgs *BuyerGroupSession) TableName() string {

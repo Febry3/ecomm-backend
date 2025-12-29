@@ -180,3 +180,32 @@ func (gh *GroupBuyHandler) CreateBuyerSession(c *gin.Context) {
 		},
 	})
 }
+
+func (gh *GroupBuyHandler) GetSessionForBuyerByCode(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		gh.log.Error("[ProductDelivery] No User in Context")
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "unauthorized",
+			"error":   "unauthorized user",
+		})
+		return
+	}
+	jwt := v.(*dto.JwtPayload)
+
+	response, err := gh.pu.GetSessionForBuyerByCode(c.Request.Context(), c.Param("sessionId"), jwt.ID)
+	if err != nil {
+		gh.log.Error("[ProductDelivery] GetSessionForBuyerByCode failed: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to get session for buyer by code",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "session retrived successfully",
+		"data":    response,
+	})
+}

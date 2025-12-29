@@ -46,3 +46,10 @@ type CreateBuyerGroupSessionRequest struct {
 	ProductVariantID string `json:"product_variant_id" binding:"required"`
 	Title            string `json:"title" binding:"required"`
 }
+
+type GetBuyerGroupSessionResponse struct {
+	Session        *entity.BuyerGroupSession `json:"buyer_group_session"`
+	Address        []entity.Address          `json:"address"`
+	ProductVariant *entity.ProductVariant    `json:"product_variant"`
+	ProductSession *entity.GroupBuySession   `json:"product_session"`
+}

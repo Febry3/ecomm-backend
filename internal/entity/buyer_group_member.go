@@ -12,7 +12,7 @@ type BuyerGroupMember struct {
 	JoinedAt  time.Time `json:"joined_at" gorm:"autoCreateTime;type:timestamptz"`
 
 	// Relationships
-	Session *BuyerGroupSession `json:"session,omitempty" gorm:"foreignKey:SessionID;references:ID"`
+	Session *BuyerGroupSession `json:"session,omitempty" gorm:"foreignKey:SessionID;references:ID;constraint:-;"`
 	User    *User              `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID"`
 	Order   *Order             `json:"order,omitempty" gorm:"foreignKey:OrderID;references:ID"`
 }

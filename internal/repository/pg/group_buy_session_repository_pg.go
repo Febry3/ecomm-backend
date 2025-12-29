@@ -63,9 +63,10 @@ func (g *GroupBuySessionRepositoryPg) FindByID(ctx context.Context, sessionID st
 	return &session, nil
 }
 
-func (g *GroupBuySessionRepositoryPg) FindByProductVariantID(ctx context.Context, productVariantID string) error {
-	if err := g.db.WithContext(ctx).Where("product_variant_id = ?", productVariantID).First(&entity.GroupBuySession{}).Error; err != nil {
-		return err
+func (g *GroupBuySessionRepositoryPg) FindByProductVariantID(ctx context.Context, productVariantID string) (*entity.GroupBuySession, error) {
+	var session entity.GroupBuySession
+	if err := g.db.WithContext(ctx).Where("product_variant_id = ?", productVariantID).First(&session).Error; err != nil {
+		return nil, err
 	}
-	return nil
+	return &session, nil
 }

@@ -25,9 +25,11 @@ type GroupBuyUsecaseContract interface {
 	ChangeGroupBuySessionStatus(ctx context.Context, sessionID string, status string, sellerID int64) error
 	EndSession(ctx context.Context, sessionID string, productVariantID string, sellerID int64) error
 	CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) (string, error)
+	GetSessionForBuyerByCode(ctx context.Context, sessionCode string, userId int64) (*dto.GetBuyerGroupSessionResponse, error)
 }
 
 type GroupBuyUsecase struct {
+	addressRepo           repository.AddressRepository
 	groupBuySessionRepo   repository.GroupBuySessionRepository
 	groupBuyTierRepo      repository.GroupBuyTierRepository
 	productRepo           repository.ProductRepository
@@ -38,8 +40,9 @@ type GroupBuyUsecase struct {
 	asynqClient           *asynq.Client
 }
 
-func NewGroupBuyUsecase(groupBuySessionRepo repository.GroupBuySessionRepository, groupBuyTierRepo repository.GroupBuyTierRepository, productRepo repository.ProductRepository, productVariantRepo repository.ProductVariantRepository, buyerGroupSessionRepo repository.BuyerGroupBuySessionRepository, tx repository.TxManager, log *logrus.Logger, asynqClient *asynq.Client) GroupBuyUsecaseContract {
+func NewGroupBuyUsecase(addressRepo repository.AddressRepository, groupBuySessionRepo repository.GroupBuySessionRepository, groupBuyTierRepo repository.GroupBuyTierRepository, productRepo repository.ProductRepository, productVariantRepo repository.ProductVariantRepository, buyerGroupSessionRepo repository.BuyerGroupBuySessionRepository, tx repository.TxManager, log *logrus.Logger, asynqClient *asynq.Client) GroupBuyUsecaseContract {
 	return &GroupBuyUsecase{
+		addressRepo:           addressRepo,
 		groupBuySessionRepo:   groupBuySessionRepo,
 		groupBuyTierRepo:      groupBuyTierRepo,
 		productRepo:           productRepo,
@@ -197,12 +200,14 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 		return "", errorx.ErrSessionAlreadyStarted
 	}
 
-	if err := g.groupBuySessionRepo.FindByProductVariantID(ctx, request.ProductVariantID); err != nil {
+	productSession, err := g.groupBuySessionRepo.FindByProductVariantID(ctx, request.ProductVariantID)
+	if err != nil {
 		g.log.Infof("[GroupBuyUsecase] Group buy session not found for product variant %s", request.ProductVariantID)
 		return "", errorx.ErrGroupBuySessionNotFound
 	}
 
 	buyerGroupSession := &entity.BuyerGroupSession{
+		SessionID:           productSession.ID,
 		ProductVariantID:    request.ProductVariantID,
 		OrganizerUserID:     request.OrganizerUserID,
 		Title:               request.Title,
@@ -220,6 +225,55 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 	return buyerGroupSession.SessionCode, nil
 }
 
-func (g *GroupBuyUsecase) GetSessionForBuyerByCode(ctx context.Context, sessionCode string) (*entity.BuyerGroupSession, error) {
-	return g.buyerGroupSessionRepo.GetSessionByCode(ctx, sessionCode)
+func (g *GroupBuyUsecase) GetSessionForBuyerByCode(ctx context.Context, sessionCode string, userId int64) (*dto.GetBuyerGroupSessionResponse, error) {
+	address, err := g.addressRepo.FindAll(ctx, userId)
+	if err != nil {
+		g.log.Errorf("failed to get address: %v", err)
+		return nil, err
+	}
+
+	buyerSession, err := g.buyerGroupSessionRepo.GetSessionByCode(ctx, sessionCode)
+	if err != nil {
+		g.log.Errorf("failed to get session: %v", err)
+		return nil, err
+	}
+
+	productVariant, err := g.productVariantRepo.GetProductVariant(ctx, buyerSession.ProductVariantID)
+	if err != nil {
+		g.log.Errorf("failed to get product variant: %v", err)
+		return nil, err
+	}
+
+	productSession, err := g.groupBuySessionRepo.FindByProductVariantID(ctx, buyerSession.ProductVariantID)
+	if err != nil {
+		g.log.Errorf("failed to get product session: %v", err)
+		return nil, err
+	}
+
+	return &dto.GetBuyerGroupSessionResponse{
+		Session:        buyerSession,
+		Address:        address,
+		ProductVariant: productVariant,
+		ProductSession: productSession,
+	}, nil
+}
+
+func (g *GroupBuyUsecase) JoinSession(ctx context.Context, sessionCode string, userID int64) error {
+	session, err := g.buyerGroupSessionRepo.GetSessionByCode(ctx, sessionCode)
+
+	if err != nil {
+		g.log.Errorf("failed to get session: %v", err)
+		return err
+	}
+
+	if session.Status != "open" {
+		g.log.Infof("Session %s is already %s, skipping", sessionCode, session.Status)
+		return nil
+	}
+
+	// if session.CurrentParticipants > session.max {
+	// 	g.log.Infof("Session %s is already full", sessionCode)
+	// 	return errorx.ErrSessionFull
+	// }
+	return nil
 }
