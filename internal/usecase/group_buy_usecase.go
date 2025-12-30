@@ -226,6 +226,17 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 			return err
 		}
 		session_code = buyerGroupSession.SessionCode
+
+		if err := g.buyerGroupMemberRepo.Create(ctx, &entity.BuyerGroupMember{
+			SessionID: buyerGroupSession.ID,
+			UserID:    request.OrganizerUserID,
+			Quantity:  1,
+			Status:    "joined",
+		}); err != nil {
+			g.log.Errorf("[GroupBuyUsecase] Failed to create member: %v", err)
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
