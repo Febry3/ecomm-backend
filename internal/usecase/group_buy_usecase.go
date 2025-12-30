@@ -207,7 +207,7 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 	}
 
 	buyerGroupSession := &entity.BuyerGroupSession{
-		SessionID:           productSession.ID,
+		GroupBuySessionID:   productSession.ID,
 		ProductVariantID:    request.ProductVariantID,
 		OrganizerUserID:     request.OrganizerUserID,
 		Title:               request.Title,
@@ -259,15 +259,15 @@ func (g *GroupBuyUsecase) GetSessionForBuyerByCode(ctx context.Context, sessionC
 }
 
 func (g *GroupBuyUsecase) JoinSession(ctx context.Context, sessionCode string, userID int64) error {
-	session, err := g.buyerGroupSessionRepo.GetSessionByCode(ctx, sessionCode)
+	buyer_session, err := g.buyerGroupSessionRepo.GetSessionByCode(ctx, sessionCode)
 
 	if err != nil {
 		g.log.Errorf("failed to get session: %v", err)
 		return err
 	}
 
-	if session.Status != "open" {
-		g.log.Infof("Session %s is already %s, skipping", sessionCode, session.Status)
+	if buyer_session.Status != "open" {
+		g.log.Infof("Session %s is already %s, skipping", sessionCode, buyer_session.Status)
 		return nil
 	}
 

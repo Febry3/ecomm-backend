@@ -4,7 +4,7 @@ import "time"
 
 type BuyerGroupSession struct {
 	ID                  string    `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	SessionID           string    `json:"session_id" gorm:"type:uuid;not null"`
+	GroupBuySessionID   string    `json:"group_buy_session_id" gorm:"type:uuid;not null"`
 	SessionCode         string    `json:"session_code" gorm:"not null;uniqueIndex"`
 	OrganizerUserID     int64     `json:"organizer_user_id" gorm:"not null"`
 	ProductVariantID    string    `json:"product_variant_id" gorm:"type:uuid;not null"`
