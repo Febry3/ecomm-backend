@@ -35,12 +35,13 @@ type GroupBuyUsecase struct {
 	productRepo           repository.ProductRepository
 	productVariantRepo    repository.ProductVariantRepository
 	buyerGroupSessionRepo repository.BuyerGroupBuySessionRepository
+	buyerGroupMemberRepo  repository.BuyerGroupMemberRepository
 	tx                    repository.TxManager
 	log                   *logrus.Logger
 	asynqClient           *asynq.Client
 }
 
-func NewGroupBuyUsecase(addressRepo repository.AddressRepository, groupBuySessionRepo repository.GroupBuySessionRepository, groupBuyTierRepo repository.GroupBuyTierRepository, productRepo repository.ProductRepository, productVariantRepo repository.ProductVariantRepository, buyerGroupSessionRepo repository.BuyerGroupBuySessionRepository, tx repository.TxManager, log *logrus.Logger, asynqClient *asynq.Client) GroupBuyUsecaseContract {
+func NewGroupBuyUsecase(addressRepo repository.AddressRepository, groupBuySessionRepo repository.GroupBuySessionRepository, groupBuyTierRepo repository.GroupBuyTierRepository, productRepo repository.ProductRepository, productVariantRepo repository.ProductVariantRepository, buyerGroupSessionRepo repository.BuyerGroupBuySessionRepository, buyerGroupMemberRepo repository.BuyerGroupMemberRepository, tx repository.TxManager, log *logrus.Logger, asynqClient *asynq.Client) GroupBuyUsecaseContract {
 	return &GroupBuyUsecase{
 		addressRepo:           addressRepo,
 		groupBuySessionRepo:   groupBuySessionRepo,
@@ -48,6 +49,7 @@ func NewGroupBuyUsecase(addressRepo repository.AddressRepository, groupBuySessio
 		productRepo:           productRepo,
 		productVariantRepo:    productVariantRepo,
 		buyerGroupSessionRepo: buyerGroupSessionRepo,
+		buyerGroupMemberRepo:  buyerGroupMemberRepo,
 		tx:                    tx,
 		log:                   log,
 		asynqClient:           asynqClient,
@@ -188,41 +190,49 @@ func (g *GroupBuyUsecase) EndSession(ctx context.Context, sessionID string, prod
 }
 
 func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) (string, error) {
-	session, err := g.buyerGroupSessionRepo.GetSessionByOrganizerUserID(ctx, request.OrganizerUserID)
-	g.log.Infof("[GroupBuyUsecase] Session: %v", session)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		g.log.Errorf("[GroupBuyUsecase] Failed to get session: %v", err)
-		return "", err
-	}
+	var session_code string
+	err := g.tx.WithTransaction(ctx, func(ctx context.Context) error {
+		session, err := g.buyerGroupSessionRepo.GetSessionByOrganizerUserID(ctx, request.OrganizerUserID)
+		g.log.Infof("[GroupBuyUsecase] Session: %v", session)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			g.log.Errorf("[GroupBuyUsecase] Failed to get session: %v", err)
+			return err
+		}
 
-	if session != nil {
-		g.log.Infof("[GroupBuyUsecase] You already started a session")
-		return "", errorx.ErrSessionAlreadyStarted
-	}
+		if session != nil {
+			g.log.Infof("[GroupBuyUsecase] You already started a session")
+			return errorx.ErrSessionAlreadyStarted
+		}
 
-	productSession, err := g.groupBuySessionRepo.FindByProductVariantID(ctx, request.ProductVariantID)
+		productSession, err := g.groupBuySessionRepo.FindByProductVariantID(ctx, request.ProductVariantID)
+		if err != nil {
+			g.log.Infof("[GroupBuyUsecase] Group buy session not found for product variant %s", request.ProductVariantID)
+			return errorx.ErrGroupBuySessionNotFound
+		}
+
+		buyerGroupSession := &entity.BuyerGroupSession{
+			GroupBuySessionID:   productSession.ID,
+			ProductVariantID:    request.ProductVariantID,
+			OrganizerUserID:     request.OrganizerUserID,
+			Title:               request.Title,
+			SessionCode:         "LBX" + uuid.New().String()[:8],
+			ExpiresAt:           time.Now().Add(time.Hour * 1),
+			CurrentParticipants: 1,
+			Status:              "open",
+		}
+
+		if err := g.buyerGroupSessionRepo.Create(ctx, buyerGroupSession); err != nil {
+			g.log.Errorf("[GroupBuyUsecase] Failed to create session: %v", err)
+			return err
+		}
+		session_code = buyerGroupSession.SessionCode
+		return nil
+	})
 	if err != nil {
-		g.log.Infof("[GroupBuyUsecase] Group buy session not found for product variant %s", request.ProductVariantID)
-		return "", errorx.ErrGroupBuySessionNotFound
-	}
-
-	buyerGroupSession := &entity.BuyerGroupSession{
-		GroupBuySessionID:   productSession.ID,
-		ProductVariantID:    request.ProductVariantID,
-		OrganizerUserID:     request.OrganizerUserID,
-		Title:               request.Title,
-		SessionCode:         "LBX" + uuid.New().String()[:8],
-		ExpiresAt:           time.Now().Add(time.Hour * 1),
-		CurrentParticipants: 1,
-		Status:              "open",
-	}
-
-	if err := g.buyerGroupSessionRepo.Create(ctx, buyerGroupSession); err != nil {
-		g.log.Errorf("[GroupBuyUsecase] Failed to create session: %v", err)
+		g.log.Errorf("failed to create session: %v", err)
 		return "", err
 	}
-
-	return buyerGroupSession.SessionCode, nil
+	return session_code, nil
 }
 
 func (g *GroupBuyUsecase) GetSessionForBuyerByCode(ctx context.Context, sessionCode string, userId int64) (*dto.GetBuyerGroupSessionResponse, error) {
@@ -271,9 +281,44 @@ func (g *GroupBuyUsecase) JoinSession(ctx context.Context, sessionCode string, u
 		return nil
 	}
 
-	// if session.CurrentParticipants > session.max {
-	// 	g.log.Infof("Session %s is already full", sessionCode)
-	// 	return errorx.ErrSessionFull
-	// }
+	// check whether user is already in session
+	for _, member := range buyer_session.Members {
+		if member.UserID == userID {
+			g.log.Infof("User %d is already in session %s, skipping", userID, sessionCode)
+			return nil
+		}
+	}
+
+	product_session, err := g.groupBuySessionRepo.FindByID(ctx, buyer_session.GroupBuySessionID)
+	if err != nil {
+		g.log.Errorf("failed to get product session: %v", err)
+		return err
+	}
+
+	if product_session.Status != "active" {
+		g.log.Infof("Session %s is already %s, skipping", sessionCode, product_session.Status)
+		return nil
+	}
+
+	if buyer_session.CurrentParticipants > product_session.MaxParticipants {
+		g.log.Infof("Session %s is already full", sessionCode)
+		return errorx.ErrSessionFull
+	}
+
+	if err := g.buyerGroupSessionRepo.AddMember(ctx, buyer_session); err != nil {
+		g.log.Errorf("failed to add member: %v", err)
+		return err
+	}
+
+	if err := g.buyerGroupMemberRepo.Create(ctx, &entity.BuyerGroupMember{
+		SessionID: buyer_session.ID,
+		UserID:    userID,
+		Quantity:  1,
+		Status:    "joined",
+	}); err != nil {
+		g.log.Errorf("failed to join session: %v", err)
+		return err
+	}
+
 	return nil
 }

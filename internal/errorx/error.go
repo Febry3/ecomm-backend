@@ -24,4 +24,5 @@ var (
 	ErrSessionClosed           = errors.New("session already closed")
 	ErrSessionAlreadyStarted   = errors.New("you already started a session")
 	ErrGroupBuySessionNotFound = errors.New("group buy session not found")
+	ErrSessionFull             = errors.New("session is already full")
 )

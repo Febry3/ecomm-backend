@@ -21,7 +21,6 @@ func (bgm *BuyerGroupMember) TableName() string {
 	return "buyer_group_members"
 }
 
-// IsPaid checks if the member has completed payment
 func (bgm *BuyerGroupMember) IsPaid() bool {
 	return bgm.Status == "paid"
 }

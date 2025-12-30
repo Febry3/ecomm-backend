@@ -26,7 +26,9 @@ func (b *BuyerGroupBuySessionRepositoryPg) Delete(ctx context.Context, sessionID
 
 func (b *BuyerGroupBuySessionRepositoryPg) GetSessionByCode(ctx context.Context, sessionCode string) (*entity.BuyerGroupSession, error) {
 	var session entity.BuyerGroupSession
-	if err := b.db.WithContext(ctx).Preload("Members").Where("session_code = ?", sessionCode).First(&session).Error; err != nil {
+	if err := b.db.WithContext(ctx).Preload("Members").Preload("Members.User", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "username", "email", "profile_url")
+	}).Where("session_code = ?", sessionCode).First(&session).Error; err != nil {
 		return nil, err
 	}
 	return &session, nil

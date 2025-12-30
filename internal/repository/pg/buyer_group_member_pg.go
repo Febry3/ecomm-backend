@@ -26,8 +26,12 @@ func (b *BuyerGroupMemberRepositoryPg) Delete(ctx context.Context, memberID stri
 
 func (b *BuyerGroupMemberRepositoryPg) GetMembersBySessionID(ctx context.Context, sessionID string) ([]entity.BuyerGroupMember, error) {
 	var member []entity.BuyerGroupMember
-	if err := b.db.WithContext(ctx).Where("session_id = ?", sessionID).Find(&member).Error; err != nil {
+	if err := b.db.WithContext(ctx).Where("session_id = ?", sessionID).Preload("User").Find(&member).Error; err != nil {
 		return nil, err
 	}
 	return member, nil
+}
+
+func (b *BuyerGroupBuySessionRepositoryPg) AddMember(ctx context.Context, buyer_session *entity.BuyerGroupSession) error {
+	return b.db.WithContext(ctx).Model(buyer_session).Update("current_participants", buyer_session.CurrentParticipants+1).Error
 }

@@ -31,6 +31,7 @@ func main() {
 	productVariantRepo := pg.NewProductVariantRepositoryPg(db)
 	buyerGroupSessionRepo := pg.NewBuyerGroupBuySessionRepositoryPg(db)
 	addressRepo := pg.NewAddressRepositoryPg(db)
+	buyerGroupMemberRepo := pg.NewBuyerGroupMemberRepositoryPg(db)
 	txManager := pg.NewTxManager(db)
 
 	// Initialize usecase (asynqClient is nil since worker doesn't enqueue tasks from usecase)
@@ -41,6 +42,7 @@ func main() {
 		productRepo,
 		productVariantRepo,
 		buyerGroupSessionRepo,
+		buyerGroupMemberRepo,
 		txManager,
 		log,
 		nil,

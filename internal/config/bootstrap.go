@@ -58,6 +58,7 @@ func Bootstrap(config *BootstrapConfig) {
 	groupBuySessionRepository := pg.NewGroupBuySessionRepositoryPg(config.DB)
 	groupBuyTierRepository := pg.NewGroupBuyTierRepositoryPg(config.DB)
 	buyerGroupSessionRepository := pg.NewBuyerGroupBuySessionRepositoryPg(config.DB)
+	buyerGroupMemberRepository := pg.NewBuyerGroupMemberRepositoryPg(config.DB)
 	txManager := pg.NewTxManager(config.DB)
 
 	// setup usecase
@@ -66,7 +67,7 @@ func Bootstrap(config *BootstrapConfig) {
 	addressUsecase := usecase.NewAddressUsecase(addressRepository, userRepository, config.Log)
 	sellerUsecase := usecase.NewSellerUsecase(sellerRepository, userRepository, txManager, config.Log, storage)
 	productUsecase := usecase.NewProductUsecase(productRepository, variantRepository, stockRepository, sellerRepository, categoryRepository, productImageRepository, storage, txManager, config.Log)
-	groupBuyUsecase := usecase.NewGroupBuyUsecase(addressRepository, groupBuySessionRepository, groupBuyTierRepository, productRepository, variantRepository, buyerGroupSessionRepository, txManager, config.Log, config.AsynqClient)
+	groupBuyUsecase := usecase.NewGroupBuyUsecase(addressRepository, groupBuySessionRepository, groupBuyTierRepository, productRepository, variantRepository, buyerGroupSessionRepository, buyerGroupMemberRepository, txManager, config.Log, config.AsynqClient)
 
 	// setup handler
 	authHandler := http.NewAuthHandler(authUsecase, config.Log, gauth)
