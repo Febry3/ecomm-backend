@@ -17,7 +17,8 @@ func NewBuyerGroupMemberRepositoryPg(db *gorm.DB) repository.BuyerGroupMemberRep
 }
 
 func (b *BuyerGroupMemberRepositoryPg) Create(ctx context.Context, member *entity.BuyerGroupMember) error {
-	return b.db.WithContext(ctx).Create(member).Error
+	db := TxFromContext(ctx, b.db)
+	return db.Create(member).Error
 }
 
 func (b *BuyerGroupMemberRepositoryPg) Delete(ctx context.Context, memberID string) error {

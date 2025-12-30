@@ -209,3 +209,30 @@ func (gh *GroupBuyHandler) GetSessionForBuyerByCode(c *gin.Context) {
 		"data":    response,
 	})
 }
+
+func (gh *GroupBuyHandler) JoinSession(c *gin.Context) {
+	v, ok := c.Get("user")
+	if !ok {
+		gh.log.Error("[ProductDelivery] No User in Context")
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "unauthorized",
+			"error":   "unauthorized user",
+		})
+		return
+	}
+	jwt := v.(*dto.JwtPayload)
+
+	if err := gh.pu.JoinSession(c.Request.Context(), c.Param("sessionId"), jwt.ID); err != nil {
+		gh.log.Error("[ProductDelivery] JoinSession failed: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to join session",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "session joined successfully",
+	})
+}

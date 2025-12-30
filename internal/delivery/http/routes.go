@@ -49,10 +49,11 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		product.GET("/variants/:id", routeConfig.Product.GetProductVariantByID)
 	}
 
-	protected := v1.Group("/", middleware.AuthMiddleware(jwt))
+	protected := v1.Group("", middleware.AuthMiddleware(jwt))
 	{
-		protected.POST("group-buy", routeConfig.GroupBuy.CreateBuyerSession)
-		protected.GET("group-buy/:sessionId", routeConfig.GroupBuy.GetSessionForBuyerByCode)
+		protected.POST("/group-buy", routeConfig.GroupBuy.CreateBuyerSession)
+		protected.GET("/group-buy/:sessionId", routeConfig.GroupBuy.GetSessionForBuyerByCode)
+		protected.POST("/group-buy/:sessionId/join", routeConfig.GroupBuy.JoinSession)
 	}
 
 	protectedUser := v1.Group("/user", middleware.AuthMiddleware(jwt))
@@ -89,6 +90,7 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 			sellerRole.POST("/group-buy", routeConfig.GroupBuy.CreateGroupBuySession)
 			sellerRole.GET("/group-buy", routeConfig.GroupBuy.GetAllGroupBuySessionForSeller)
 			sellerRole.PATCH("/group-buy/status", routeConfig.GroupBuy.ChangeGroupBuySessionStatus)
+
 		}
 
 	}

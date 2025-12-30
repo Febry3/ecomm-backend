@@ -26,6 +26,7 @@ type GroupBuyUsecaseContract interface {
 	EndSession(ctx context.Context, sessionID string, productVariantID string, sellerID int64) error
 	CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) (string, error)
 	GetSessionForBuyerByCode(ctx context.Context, sessionCode string, userId int64) (*dto.GetBuyerGroupSessionResponse, error)
+	JoinSession(ctx context.Context, sessionCode string, userID int64) error
 }
 
 type GroupBuyUsecase struct {
@@ -280,53 +281,61 @@ func (g *GroupBuyUsecase) GetSessionForBuyerByCode(ctx context.Context, sessionC
 }
 
 func (g *GroupBuyUsecase) JoinSession(ctx context.Context, sessionCode string, userID int64) error {
-	buyer_session, err := g.buyerGroupSessionRepo.GetSessionByCode(ctx, sessionCode)
+	err := g.tx.WithTransaction(ctx, func(ctx context.Context) error {
+		buyer_session, err := g.buyerGroupSessionRepo.GetSessionByCode(ctx, sessionCode)
 
-	if err != nil {
-		g.log.Errorf("failed to get session: %v", err)
-		return err
-	}
+		if err != nil {
+			g.log.Errorf("failed to get session: %v", err)
+			return err
+		}
 
-	if buyer_session.Status != "open" {
-		g.log.Infof("Session %s is already %s, skipping", sessionCode, buyer_session.Status)
-		return nil
-	}
-
-	// check whether user is already in session
-	for _, member := range buyer_session.Members {
-		if member.UserID == userID {
-			g.log.Infof("User %d is already in session %s, skipping", userID, sessionCode)
+		if buyer_session.Status != "open" {
+			g.log.Infof("Session %s is already %s, skipping", sessionCode, buyer_session.Status)
 			return nil
 		}
-	}
 
-	product_session, err := g.groupBuySessionRepo.FindByID(ctx, buyer_session.GroupBuySessionID)
-	if err != nil {
-		g.log.Errorf("failed to get product session: %v", err)
-		return err
-	}
+		// check whether user is already in session
+		for _, member := range buyer_session.Members {
+			if member.UserID == userID {
+				g.log.Infof("User %d is already in session %s, skipping", userID, sessionCode)
+				return nil
+			}
+		}
 
-	if product_session.Status != "active" {
-		g.log.Infof("Session %s is already %s, skipping", sessionCode, product_session.Status)
+		product_session, err := g.groupBuySessionRepo.FindByID(ctx, buyer_session.GroupBuySessionID)
+		if err != nil {
+			g.log.Errorf("failed to get product session: %v", err)
+			return err
+		}
+
+		if product_session.Status != "active" {
+			g.log.Infof("Session %s is already %s, skipping", sessionCode, product_session.Status)
+			return nil
+		}
+
+		if buyer_session.CurrentParticipants > product_session.MaxParticipants {
+			g.log.Infof("Session %s is already full", sessionCode)
+			return errorx.ErrSessionFull
+		}
+
+		if err := g.buyerGroupSessionRepo.AddMember(ctx, buyer_session); err != nil {
+			g.log.Errorf("failed to add member: %v", err)
+			return err
+		}
+
+		if err := g.buyerGroupMemberRepo.Create(ctx, &entity.BuyerGroupMember{
+			SessionID: buyer_session.ID,
+			UserID:    userID,
+			Quantity:  1,
+			Status:    "joined",
+		}); err != nil {
+			g.log.Errorf("failed to join session: %v", err)
+			return err
+		}
+
 		return nil
-	}
-
-	if buyer_session.CurrentParticipants > product_session.MaxParticipants {
-		g.log.Infof("Session %s is already full", sessionCode)
-		return errorx.ErrSessionFull
-	}
-
-	if err := g.buyerGroupSessionRepo.AddMember(ctx, buyer_session); err != nil {
-		g.log.Errorf("failed to add member: %v", err)
-		return err
-	}
-
-	if err := g.buyerGroupMemberRepo.Create(ctx, &entity.BuyerGroupMember{
-		SessionID: buyer_session.ID,
-		UserID:    userID,
-		Quantity:  1,
-		Status:    "joined",
-	}); err != nil {
+	})
+	if err != nil {
 		g.log.Errorf("failed to join session: %v", err)
 		return err
 	}
