@@ -191,7 +191,7 @@ func (g *GroupBuyUsecase) EndSession(ctx context.Context, sessionID string, prod
 }
 
 func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) (string, error) {
-	var session_code string
+	var sessionCode string
 	err := g.tx.WithTransaction(ctx, func(ctx context.Context) error {
 		session, err := g.buyerGroupSessionRepo.GetSessionByOrganizerUserID(ctx, request.OrganizerUserID)
 		g.log.Infof("[GroupBuyUsecase] Session: %v", session)
@@ -217,7 +217,7 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 			OrganizerUserID:     request.OrganizerUserID,
 			Title:               request.Title,
 			SessionCode:         "LBX" + uuid.New().String()[:8],
-			ExpiresAt:           time.Now().Add(time.Hour * 1),
+			ExpiresAt:           time.Now().Add(time.Minute * 15),
 			CurrentParticipants: 1,
 			Status:              "open",
 		}
@@ -226,7 +226,7 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 			g.log.Errorf("[GroupBuyUsecase] Failed to create session: %v", err)
 			return err
 		}
-		session_code = buyerGroupSession.SessionCode
+		sessionCode = buyerGroupSession.SessionCode
 
 		if err := g.buyerGroupMemberRepo.Create(ctx, &entity.BuyerGroupMember{
 			SessionID: buyerGroupSession.ID,
@@ -244,7 +244,7 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 		g.log.Errorf("failed to create session: %v", err)
 		return "", err
 	}
-	return session_code, nil
+	return sessionCode, nil
 }
 
 func (g *GroupBuyUsecase) GetSessionForBuyerByCode(ctx context.Context, sessionCode string, userId int64) (*dto.GetBuyerGroupSessionResponse, error) {

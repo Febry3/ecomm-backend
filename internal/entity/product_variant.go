@@ -12,7 +12,7 @@ type ProductVariant struct {
 	CreatedAt        time.Time            `json:"-" gorm:"autoCreateTime;type:timestamptz"`
 	UpdatedAt        time.Time            `json:"-" gorm:"autoUpdateTime;type:timestamptz"`
 	Stock            *ProductVariantStock `json:"stock,omitempty" gorm:"foreignKey:ProductVariantID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Product          *Product             `json:"product,omitempty" gorm:"foreignKey:ProductID;references:ID"`
+	Product          *Product             `json:"product,omitempty" gorm:"foreignKey:ProductID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	GroupBuySessions *GroupBuySession     `json:"group_buy_sessions,omitempty" gorm:"foreignKey:ProductVariantID;references:ID"`
 }
 

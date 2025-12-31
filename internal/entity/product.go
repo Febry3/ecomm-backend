@@ -16,11 +16,11 @@ type Product struct {
 	Badge         string           `json:"badge,omitempty"`
 	IsActive      bool             `json:"is_active,omitempty" gorm:"default:true"`
 	Status        string           `json:"status,omitempty" gorm:"default:pending;check:status IN ('pending','approved','rejected')"`
-	CreatedAt     time.Time        `json:"created_at" gorm:"autoCreateTime;type:timestamptz"`
-	UpdatedAt     time.Time        `json:"updated_at" gorm:"autoUpdateTime;type:timestamptz"`
+	CreatedAt     *time.Time       `json:"created_at,omitempty" gorm:"autoCreateTime;type:timestamptz"`
+	UpdatedAt     *time.Time       `json:"updated_at,omitempty" gorm:"autoUpdateTime;type:timestamptz"`
 	Variants      []ProductVariant `json:"variants,omitempty" gorm:"foreignKey:ProductID;references:ID"`
 	ProductImages []ProductImage   `json:"product_images,omitempty" gorm:"foreignKey:ProductID;references:ID"`
-	Seller        Seller           `json:"seller" gorm:"foreignKey:SellerID;references:ID; omitempty"`
+	Seller        *Seller          `json:"seller,omitempty" gorm:"foreignKey:SellerID;references:ID; omitempty"`
 }
 
 func (p *Product) TableName() string {
