@@ -36,3 +36,7 @@ func (b *BuyerGroupMemberRepositoryPg) GetMembersBySessionID(ctx context.Context
 func (b *BuyerGroupBuySessionRepositoryPg) AddMember(ctx context.Context, buyer_session *entity.BuyerGroupSession) error {
 	return b.db.WithContext(ctx).Model(buyer_session).Update("current_participants", buyer_session.CurrentParticipants+1).Error
 }
+
+func (b *BuyerGroupBuySessionRepositoryPg) ChangeBuyerSessionStatus(ctx context.Context, buyerSessionID string, status string) error {
+	return b.db.WithContext(ctx).Model(&entity.BuyerGroupSession{}).Where("id = ?", buyerSessionID).Update("status", status).Error
+}

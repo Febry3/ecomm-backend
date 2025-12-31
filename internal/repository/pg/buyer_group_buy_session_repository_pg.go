@@ -42,3 +42,14 @@ func (b *BuyerGroupBuySessionRepositoryPg) GetSessionByOrganizerUserID(ctx conte
 	}
 	return session, nil
 }
+
+func (b *BuyerGroupBuySessionRepositoryPg) GetSessionByID(ctx context.Context, buyerSessionID string) (*entity.BuyerGroupSession, error) {
+	var session *entity.BuyerGroupSession
+
+	if err := b.db.WithContext(ctx).Where("id = ?", buyerSessionID).Preload("Members").Preload("Members.User", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id")
+	}).First(&session).Error; err != nil {
+		return nil, err
+	}
+	return session, nil
+}

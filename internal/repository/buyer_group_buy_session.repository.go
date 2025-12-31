@@ -12,4 +12,6 @@ type BuyerGroupBuySessionRepository interface {
 	GetSessionByOrganizerUserID(ctx context.Context, organizerUserID int64) (*entity.BuyerGroupSession, error)
 	Delete(ctx context.Context, sessionID string) error
 	AddMember(ctx context.Context, buyer_session *entity.BuyerGroupSession) error
+	ChangeBuyerSessionStatus(ctx context.Context, buyerSessionID string, status string) error
+	GetSessionByID(ctx context.Context, buyerSessionID string) (*entity.BuyerGroupSession, error)
 }

@@ -18,7 +18,8 @@ type GroupBuySession struct {
 	UpdatedAt        time.Time       `json:"-" gorm:"autoUpdateTime;type:timestamptz"`
 	ProductVariant   *ProductVariant `json:"product_variant,omitempty" gorm:"foreignKey:ProductVariantID"`
 	// Seller           Seller         `json:"seller" gorm:"foreignKey:SellerID"`
-	GroupBuyTiers []GroupBuyTier `json:"group_buy_tiers" gorm:"foreignKey:GroupBuySessionID"`
+	GroupBuyTiers       []GroupBuyTier `json:"group_buy_tiers" gorm:"foreignKey:GroupBuySessionID"`
+	CurrentParticipants int64          `json:"current_participants"`
 }
 
 func (gbs *GroupBuySession) TableName() string {

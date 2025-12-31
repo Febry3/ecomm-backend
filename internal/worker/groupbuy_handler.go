@@ -83,3 +83,17 @@ func (h *GroupBuySessionHandler) HandleSessionEndMail(ctx context.Context, t *as
 
 	return nil
 }
+
+func (h *GroupBuySessionHandler) HandleBuyerSessionEnd(ctx context.Context, t *asynq.Task) error {
+	var payload tasks.BuyerGroupBuySessionEndPayload
+	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+		return fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	err := h.groupBuyUsecase.ChangeBuyerSessionStatus(ctx, payload.BuyerSessionID, "expired")
+	if err != nil {
+		h.log.Errorf("failed to change buyer session status: %v", err)
+		return fmt.Errorf("failed to change buyer session status: %w", err)
+	}
+	return nil
+}

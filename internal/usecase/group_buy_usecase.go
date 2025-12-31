@@ -27,6 +27,7 @@ type GroupBuyUsecaseContract interface {
 	CreateBuyerSession(ctx context.Context, request *dto.CreateBuyerGroupSessionRequest) (string, error)
 	GetSessionForBuyerByCode(ctx context.Context, sessionCode string, userId int64) (*dto.GetBuyerGroupSessionResponse, error)
 	JoinSession(ctx context.Context, sessionCode string, userID int64) error
+	ChangeBuyerSessionStatus(ctx context.Context, buyerSessionID string, status string) error
 }
 
 type GroupBuyUsecase struct {
@@ -85,6 +86,7 @@ func (g *GroupBuyUsecase) CreateGroupBuySession(ctx context.Context, request *dt
 			SellerID:         sellerID,
 			MinParticipants:  request.MinParticipants,
 			MaxParticipants:  request.MaxParticipants,
+			MaxQuantity:      int64(request.MaxQuantity),
 			ExpiresAt:        request.ExpiresAt,
 		}
 
@@ -150,7 +152,23 @@ func (g *GroupBuyUsecase) FindGroupBuySessionByID(ctx context.Context, sessionID
 }
 
 func (g *GroupBuyUsecase) GetAllGroupBuySessionForSeller(ctx context.Context, sellerID int64) ([]entity.GroupBuySession, error) {
-	return g.groupBuySessionRepo.GetAllForSeller(ctx, sellerID)
+	groupBuySessions, err := g.groupBuySessionRepo.GetAllForSeller(ctx, sellerID)
+	if err != nil {
+		g.log.Errorf("failed to get group buy sessions for seller: %v", err)
+		return nil, err
+	}
+
+	// it seems stupid but its works, later i will fix it
+	for i, session := range groupBuySessions {
+		buyerGroupBuySession, err := g.buyerGroupSessionRepo.GetSessionByID(ctx, session.ID)
+		if err != nil {
+			g.log.Errorf("failed to get buyer group buy session: %v", err)
+			return nil, err
+		}
+		groupBuySessions[i].CurrentParticipants = int64(len(buyerGroupBuySession.Members))
+	}
+
+	return groupBuySessions, nil
 }
 
 func (g *GroupBuyUsecase) GetAllGroupBuySessionForBuyer(ctx context.Context) ([]entity.GroupBuySession, error) {
@@ -237,6 +255,22 @@ func (g *GroupBuyUsecase) CreateBuyerSession(ctx context.Context, request *dto.C
 			g.log.Errorf("[GroupBuyUsecase] Failed to create member: %v", err)
 			return err
 		}
+
+		task, err := tasks.NewBuyerGrupBuySessionEndTask(tasks.BuyerGroupBuySessionEndPayload{
+			BuyerSessionID: buyerGroupSession.ID,
+		})
+
+		if err != nil {
+			g.log.Errorf("failed to create session end task: %v", err)
+			return err
+		}
+		_, err = g.asynqClient.Enqueue(task, asynq.ProcessAt(buyerGroupSession.ExpiresAt))
+		if err != nil {
+			g.log.Errorf("failed to enqueue session end task: %v", err)
+			return err
+		}
+
+		g.log.Infof("Enqueued session end task for session %s at %v", buyerGroupSession.ID, buyerGroupSession.ExpiresAt)
 
 		return nil
 	})
@@ -341,4 +375,8 @@ func (g *GroupBuyUsecase) JoinSession(ctx context.Context, sessionCode string, u
 	}
 
 	return nil
+}
+
+func (g *GroupBuyUsecase) ChangeBuyerSessionStatus(ctx context.Context, buyerSessionID string, status string) error {
+	return g.buyerGroupSessionRepo.ChangeBuyerSessionStatus(ctx, buyerSessionID, status)
 }

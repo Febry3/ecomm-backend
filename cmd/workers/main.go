@@ -66,6 +66,7 @@ func main() {
 	// Group Buy related
 	mux.HandleFunc(tasks.TypeGroupBuySessionEnd, groupBuyHandler.HandleSessionEnd)
 	mux.HandleFunc(tasks.TypeGroupBuySessionEndMail, groupBuyHandler.HandleSessionEndMail)
+	mux.HandleFunc(tasks.TypeBuyerGroupBuySessionEnd, groupBuyHandler.HandleBuyerSessionEnd)
 
 	// Handle graceful shutdown
 	go func() {
