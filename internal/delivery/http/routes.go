@@ -19,6 +19,7 @@ type RouteConfig struct {
 	Seller   SellerHandler
 	Product  ProductHandler
 	GroupBuy GroupBuyHandler
+	Order    OrderHandler
 }
 
 func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
@@ -66,7 +67,16 @@ func (routeConfig *RouteConfig) Init(jwt *helpers.JwtService) {
 		protectedUser.POST("/address", routeConfig.Address.Create)
 		protectedUser.PUT("/address/:id", routeConfig.Address.Update)
 		protectedUser.DELETE("/address/:id", routeConfig.Address.Delete)
+
+		// Order routes
+		protectedUser.POST("/orders", routeConfig.Order.CreateDirectOrder)
+		protectedUser.POST("/orders/group-buy", routeConfig.Order.CreateGroupBuyOrder)
+		protectedUser.GET("/orders", routeConfig.Order.GetOrders)
+		protectedUser.GET("/orders/:id", routeConfig.Order.GetOrderByID)
 	}
+
+	// Public webhook endpoint (Midtrans will call this)
+	v1.POST("/payments/webhook", routeConfig.Order.HandlePaymentNotification)
 
 	protectedSeller := v1.Group("/seller", middleware.AuthMiddleware(jwt))
 	{

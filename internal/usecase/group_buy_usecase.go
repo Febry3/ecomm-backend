@@ -159,13 +159,13 @@ func (g *GroupBuyUsecase) GetAllGroupBuySessionForSeller(ctx context.Context, se
 	}
 
 	// it seems stupid but its works, later i will fix it
-	for i, session := range groupBuySessions {
-		buyerGroupBuySession, err := g.buyerGroupSessionRepo.GetSessionByID(ctx, session.ID)
-		if err != nil {
-			g.log.Errorf("failed to get buyer group buy session: %v", err)
-			return nil, err
+	for i := range groupBuySessions {
+		buyerGroupBuySession, err := g.buyerGroupSessionRepo.GetSessionByID(ctx, groupBuySessions[i].ID)
+		if err == nil {
+			g.log.Infof("Buyer group buy session %v found", buyerGroupBuySession)
+			groupBuySessions[i].CurrentParticipants = int64(len(buyerGroupBuySession.Members))
 		}
-		groupBuySessions[i].CurrentParticipants = int64(len(buyerGroupBuySession.Members))
+
 	}
 
 	return groupBuySessions, nil
