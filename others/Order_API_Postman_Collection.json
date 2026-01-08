@@ -1,0 +1,272 @@
+{
+	"info": {
+		"name": "Order API - Midtrans Integration",
+		"description": "API collection for testing order endpoints with Midtrans VA payment",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080/v1/api",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login (Get Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data && jsonData.data.access_token) {",
+									"    pm.collectionVariables.set('authToken', jsonData.data.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"your-email@example.com\",\n    \"password\": \"your-password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "Create Direct Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_variant_id\": \"YOUR_PRODUCT_VARIANT_UUID\",\n    \"quantity\": 1,\n    \"address_id\": \"YOUR_ADDRESS_UUID\",\n    \"bank_code\": \"bca\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders"]
+						},
+						"description": "Create a direct buy order.\n\n**Bank codes supported:** `bca`, `bni`, `bri`, `mandiri`, `permata`, `cimb`\n\n**Response includes:**\n- Order details\n- VA number for payment\n- Expiration time (5 minutes)"
+					}
+				},
+				{
+					"name": "Create Group Buy Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"buyer_group_session_id\": \"YOUR_BUYER_GROUP_SESSION_UUID\",\n    \"address_id\": \"YOUR_ADDRESS_UUID\",\n    \"bank_code\": \"bni\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/group-buy",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", "group-buy"]
+						},
+						"description": "Create an order for a group buy session you've joined."
+					}
+				},
+				{
+					"name": "Get My Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get paginated list of your orders."
+					}
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/user/orders/:orderId",
+							"host": ["{{baseUrl}}"],
+							"path": ["user", "orders", ":orderId"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "YOUR_ORDER_UUID"
+								}
+							]
+						},
+						"description": "Get detailed information about a specific order."
+					}
+				}
+			]
+		},
+		{
+			"name": "Webhooks",
+			"item": [
+				{
+					"name": "Simulate Payment Success (Settlement)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"transaction_time\": \"2026-01-01 14:45:00\",\n    \"transaction_status\": \"settlement\",\n    \"transaction_id\": \"tx-123456789\",\n    \"status_message\": \"Success, transaction is found\",\n    \"status_code\": \"200\",\n    \"signature_key\": \"YOUR_CALCULATED_SIGNATURE\",\n    \"payment_type\": \"bank_transfer\",\n    \"order_id\": \"ORD-20260101-abc12345\",\n    \"merchant_id\": \"YOUR_MERCHANT_ID\",\n    \"gross_amount\": \"150000.00\",\n    \"fraud_status\": \"accept\",\n    \"currency\": \"IDR\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/webhook",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "webhook"]
+						},
+						"description": "Simulate Midtrans payment notification (settlement).\n\n**Note:** In production, Midtrans calls this endpoint. For testing, calculate signature:\n```\nsha512(order_id + status_code + gross_amount + server_key)\n```"
+					}
+				},
+				{
+					"name": "Simulate Payment Expired",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"transaction_time\": \"2026-01-01 14:50:00\",\n    \"transaction_status\": \"expire\",\n    \"transaction_id\": \"tx-123456789\",\n    \"status_code\": \"407\",\n    \"signature_key\": \"YOUR_CALCULATED_SIGNATURE\",\n    \"payment_type\": \"bank_transfer\",\n    \"order_id\": \"ORD-20260101-abc12345\",\n    \"gross_amount\": \"150000.00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/webhook",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "webhook"]
+						},
+						"description": "Simulate payment expiration webhook."
+					}
+				},
+				{
+					"name": "Simulate Payment Cancelled",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"transaction_time\": \"2026-01-01 14:48:00\",\n    \"transaction_status\": \"cancel\",\n    \"transaction_id\": \"tx-123456789\",\n    \"status_code\": \"200\",\n    \"signature_key\": \"YOUR_CALCULATED_SIGNATURE\",\n    \"payment_type\": \"bank_transfer\",\n    \"order_id\": \"ORD-20260101-abc12345\",\n    \"gross_amount\": \"150000.00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/webhook",
+							"host": ["{{baseUrl}}"],
+							"path": ["payments", "webhook"]
+						},
+						"description": "Simulate payment cancellation webhook."
+					}
+				}
+			]
+		},
+		{
+			"name": "Helper - Get Product Variants",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/product",
+					"host": ["{{baseUrl}}"],
+					"path": ["product"]
+				},
+				"description": "Get products to find product_variant_id for testing orders."
+			}
+		},
+		{
+			"name": "Helper - Get My Addresses",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/user/address",
+					"host": ["{{baseUrl}}"],
+					"path": ["user", "address"]
+				},
+				"description": "Get your addresses to find address_id for testing orders."
+			}
+		}
+	]
+}

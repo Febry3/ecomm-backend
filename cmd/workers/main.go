@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	"github.com/febry3/gamingin/internal/config"
+	"github.com/febry3/gamingin/internal/infra/payment"
 	"github.com/febry3/gamingin/internal/repository/pg"
 	"github.com/febry3/gamingin/internal/usecase"
 	"github.com/febry3/gamingin/internal/worker"
@@ -18,13 +19,11 @@ func main() {
 	viperConfig := config.NewViper(log)
 	email := config.NewEmail(viperConfig)
 
-	// Initialize database for worker
 	db, err := config.NewGorm(viperConfig, log)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 
-	// Initialize repositories
 	groupBuySessionRepo := pg.NewGroupBuySessionRepositoryPg(db)
 	groupBuyTierRepo := pg.NewGroupBuyTierRepositoryPg(db)
 	productRepo := pg.NewProductRepositoryPg(db)
@@ -34,7 +33,19 @@ func main() {
 	buyerGroupMemberRepo := pg.NewBuyerGroupMemberRepositoryPg(db)
 	txManager := pg.NewTxManager(db)
 
-	// Initialize usecase (asynqClient is nil since worker doesn't enqueue tasks from usecase)
+	orderRepo := pg.NewOrderRepositoryPg(db)
+	paymentRepo := pg.NewPaymentRepositoryPg(db)
+	shippingRepo := pg.NewOrderShippingDetailRepositoryPg(db)
+	stockRepo := pg.NewProductVariantStockRepositoryPg(db)
+
+	asynqConfig := config.NewAsynqConfig(viperConfig)
+	asynqClient := config.NewAsynqClient(asynqConfig, log)
+	defer asynqClient.Close()
+
+	midtransCoreClient := config.NewMidtransCoreApiClient(viperConfig)
+	serverKey := viperConfig.GetString("midtrans.server_key")
+	paymentGateway := payment.NewMidtransGateway(*midtransCoreClient, serverKey, log)
+
 	groupBuyUsecase := usecase.NewGroupBuyUsecase(
 		addressRepo,
 		groupBuySessionRepo,
@@ -48,27 +59,35 @@ func main() {
 		nil,
 	)
 
-	// Initialize Asynq
-	asynqConfig := config.NewAsynqConfig(viperConfig)
-	asynqClient := config.NewAsynqClient(asynqConfig, log)
-	defer asynqClient.Close()
+	orderUsecase := usecase.NewOrderUsecase(
+		orderRepo,
+		paymentRepo,
+		shippingRepo,
+		addressRepo,
+		productVariantRepo,
+		stockRepo,
+		buyerGroupSessionRepo,
+		paymentGateway,
+		txManager,
+		asynqClient,
+		log,
+	)
 
-	// Initialize handler with usecase and asynq client for task chaining
 	groupBuyHandler := worker.NewGroupBuySessionHandler(groupBuyUsecase, asynqClient, email, log)
+	orderHandler := worker.NewOrderHandler(orderUsecase, log)
 
 	srv := config.NewAsynqServer(asynqConfig, log)
 	mux := asynq.NewServeMux()
 
-	// Register task handlers
 	mux.HandleFunc(tasks.TypeEmailDelivery, tasks.HandleEmailDeliveryTask)
 	mux.HandleFunc(tasks.TypeWelcomeEmail, tasks.HandleWelcomeEmailTask)
 
-	// Group Buy related
 	mux.HandleFunc(tasks.TypeGroupBuySessionEnd, groupBuyHandler.HandleSessionEnd)
 	mux.HandleFunc(tasks.TypeGroupBuySessionEndMail, groupBuyHandler.HandleSessionEndMail)
 	mux.HandleFunc(tasks.TypeBuyerGroupBuySessionEnd, groupBuyHandler.HandleBuyerSessionEnd)
 
-	// Handle graceful shutdown
+	mux.HandleFunc(tasks.TypeOrderExpiration, orderHandler.HandleOrderExpiration)
+
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

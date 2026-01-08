@@ -31,7 +31,8 @@ type PaymentStatusResult struct {
 // PaymentGateway defines the interface for payment gateway operations
 type PaymentGateway interface {
 	// ChargeVA creates a Virtual Account payment
-	ChargeVA(ctx context.Context, orderID string, amount int64, bankCode string) (*VAPaymentResult, error)
+	// expiresAt is optional - if nil, uses default 5 minute expiry
+	ChargeVA(ctx context.Context, orderID string, amount int64, bankCode string, expiresAt *time.Time) (*VAPaymentResult, error)
 
 	// GetTransactionStatus checks the current status of a transaction
 	GetTransactionStatus(ctx context.Context, orderID string) (*PaymentStatusResult, error)

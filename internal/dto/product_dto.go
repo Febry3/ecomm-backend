@@ -141,8 +141,6 @@ func ToProductResponse(product *entity.Product, variants []entity.ProductVariant
 		Badge:       product.Badge,
 		IsActive:    product.IsActive,
 		Status:      product.Status,
-		CreatedAt:   product.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   product.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		Variants:    variantResponses,
 	}
 }

@@ -46,7 +46,7 @@ func (b *BuyerGroupBuySessionRepositoryPg) GetSessionByOrganizerUserID(ctx conte
 func (b *BuyerGroupBuySessionRepositoryPg) GetSessionByID(ctx context.Context, buyerSessionID string) (*entity.BuyerGroupSession, error) {
 	var session *entity.BuyerGroupSession
 
-	if err := b.db.WithContext(ctx).Where("group_buy_session_id = ?", buyerSessionID).Preload("Members").First(&session).Error; err != nil {
+	if err := b.db.WithContext(ctx).Where("id = ?", buyerSessionID).Preload("Members").First(&session).Error; err != nil {
 		return nil, err
 	}
 	return session, nil

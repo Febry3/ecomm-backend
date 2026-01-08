@@ -27,7 +27,8 @@ func NewMidtransGateway(client coreapi.Client, serverKey string, log *logrus.Log
 }
 
 // ChargeVA creates a Virtual Account payment request
-func (m *MidtransGateway) ChargeVA(ctx context.Context, orderID string, amount int64, bankCode string) (*VAPaymentResult, error) {
+// expiresAt is optional - if nil, uses default 5 minute expiry
+func (m *MidtransGateway) ChargeVA(ctx context.Context, orderID string, amount int64, bankCode string, expiresAt *time.Time) (*VAPaymentResult, error) {
 	var req *coreapi.ChargeReq
 
 	switch bankCode {
@@ -59,10 +60,22 @@ func (m *MidtransGateway) ChargeVA(ctx context.Context, orderID string, amount i
 		return nil, fmt.Errorf("unsupported bank code: %s", bankCode)
 	}
 
-	// Set custom expiry to 5 minutes
-	req.CustomExpiry = &coreapi.CustomExpiry{
-		ExpiryDuration: 5,
-		Unit:           "minute",
+	// Set custom expiry based on expiresAt or default to 5 minutes
+	if expiresAt != nil {
+		duration := time.Until(*expiresAt)
+		if duration < time.Minute {
+			duration = time.Minute // minimum 1 minute
+		}
+		expiryMinutes := int(duration.Minutes())
+		req.CustomExpiry = &coreapi.CustomExpiry{
+			ExpiryDuration: expiryMinutes,
+			Unit:           "minute",
+		}
+	} else {
+		req.CustomExpiry = &coreapi.CustomExpiry{
+			ExpiryDuration: 5,
+			Unit:           "minute",
+		}
 	}
 
 	resp, err := m.client.ChargeTransaction(req)

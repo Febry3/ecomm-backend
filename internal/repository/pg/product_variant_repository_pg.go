@@ -28,7 +28,7 @@ func (p *ProductVariantRepository) DeleteProductVariant(ctx context.Context, pro
 func (p *ProductVariantRepository) GetProductVariant(ctx context.Context, productVariantID string) (*entity.ProductVariant, error) {
 	var productVariant entity.ProductVariant
 	err := p.db.WithContext(ctx).Preload("Product", func(db *gorm.DB) *gorm.DB {
-		return db.Select("title", "description", "id")
+		return db.Select("id", "seller_id", "title", "description")
 	}).
 		Preload("Product.ProductImages", func(db *gorm.DB) *gorm.DB {
 			return db.Limit(1)

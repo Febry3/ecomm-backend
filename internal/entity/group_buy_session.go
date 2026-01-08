@@ -5,8 +5,7 @@ import (
 )
 
 type GroupBuySession struct {
-	ID string `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-
+	ID               string          `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
 	ProductVariantID string          `json:"product_variant_id" gorm:"type:uuid;not null"`
 	SellerID         int64           `json:"seller_id" gorm:"not null"`
 	MinParticipants  int             `json:"min_participants,omitempty" gorm:"not null"`
