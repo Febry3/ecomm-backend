@@ -62,6 +62,7 @@ func (p *ProductRepositoryPg) GetProductsForBuyer(ctx context.Context, limit int
 		Limit(limit + 1).
 		Find(&products).
 		Error
+
 	if err != nil {
 		return nil, err
 	}

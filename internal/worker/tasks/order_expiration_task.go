@@ -13,13 +13,19 @@ const TypeOrderExpiration = "order:expire"
 type OrderExpirationPayload struct {
 	OrderID     string `json:"order_id"`
 	OrderNumber string `json:"order_number"`
+	TierID      string `json:"tier_id"`
+	UserID      int64  `json:"user_id"`
+	PaidAmount  int64  `json:"paid_amount"`
 }
 
 // NewOrderExpirationTask creates a new order expiration task
-func NewOrderExpirationTask(orderID, orderNumber string) (*asynq.Task, error) {
+func NewOrderExpirationTask(orderID, orderNumber, tierID string, userID int64, paidAmount int64) (*asynq.Task, error) {
 	payload, err := json.Marshal(OrderExpirationPayload{
 		OrderID:     orderID,
 		OrderNumber: orderNumber,
+		TierID:      tierID,
+		UserID:      userID,
+		PaidAmount:  paidAmount,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal order expiration payload: %w", err)

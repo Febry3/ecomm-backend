@@ -185,7 +185,7 @@ func (u *OrderUsecase) CreateDirectOrder(ctx context.Context, userID int64, requ
 		// Continue - the order is created, we can retry payment later
 	}
 
-	task, err := tasks.NewOrderExpirationTask(order.ID, orderNumber)
+	task, err := tasks.NewOrderExpirationTask(order.ID, orderNumber, "", userID, int64(totalAmount))
 	if err == nil {
 		_, err = u.asynqClient.Enqueue(task, asynq.ProcessIn(5*time.Minute), asynq.Queue("critical"))
 		if err != nil {
@@ -307,12 +307,11 @@ func (u *OrderUsecase) CreateGroupBuyOrder(ctx context.Context, userID int64, re
 		BillKey:              paymentResult.BillKey,
 		BillerCode:           paymentResult.BillerCode,
 		GatewayTransactionID: paymentResult.TransactionID,
-		ExpiredAt:            paymentResult.ExpiredAt,
 	}
 	u.paymentRepo.Create(paymentEntity)
 
-	task, _ := tasks.NewOrderExpirationTask(order.ID, orderNumber)
-	u.asynqClient.Enqueue(task, asynq.ProcessIn(5*time.Minute), asynq.Queue("critical"))
+	task, _ := tasks.NewOrderExpirationTask(order.ID, orderNumber, request.GroupBuyTierID, userID, int64(totalAmount))
+	u.asynqClient.Enqueue(task, asynq.ProcessIn(1*time.Minute), asynq.Queue("critical"))
 
 	return u.buildOrderResponse(order, paymentEntity, variant, nil), nil
 }

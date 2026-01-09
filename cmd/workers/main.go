@@ -37,6 +37,7 @@ func main() {
 	paymentRepo := pg.NewPaymentRepositoryPg(db)
 	shippingRepo := pg.NewOrderShippingDetailRepositoryPg(db)
 	stockRepo := pg.NewProductVariantStockRepositoryPg(db)
+	userWalletRepo := pg.NewUserWalletRepositoryPg(db)
 
 	asynqConfig := config.NewAsynqConfig(viperConfig)
 	asynqClient := config.NewAsynqClient(asynqConfig, log)
@@ -46,6 +47,7 @@ func main() {
 	serverKey := viperConfig.GetString("midtrans.server_key")
 	paymentGateway := payment.NewMidtransGateway(*midtransCoreClient, serverKey, log)
 
+	userWalletUsecase := usecase.NewUserWalletUsecase(userWalletRepo)
 	groupBuyUsecase := usecase.NewGroupBuyUsecase(
 		addressRepo,
 		groupBuySessionRepo,
@@ -74,7 +76,7 @@ func main() {
 	)
 
 	groupBuyHandler := worker.NewGroupBuySessionHandler(groupBuyUsecase, asynqClient, email, log)
-	orderHandler := worker.NewOrderHandler(orderUsecase, log)
+	orderHandler := worker.NewOrderHandler(orderUsecase, groupBuyUsecase, userWalletUsecase, log)
 
 	srv := config.NewAsynqServer(asynqConfig, log)
 	mux := asynq.NewServeMux()

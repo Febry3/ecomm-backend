@@ -22,7 +22,7 @@ func (g *GroupBuyTierRepositoryPg) Create(ctx context.Context, tier *entity.Grou
 
 func (g *GroupBuyTierRepositoryPg) FindByID(ctx context.Context, tierID string) (*entity.GroupBuyTier, error) {
 	var tier entity.GroupBuyTier
-	if err := g.db.First(&tier, tierID).Error; err != nil {
+	if err := g.db.Where("id = ?", tierID).First(&tier).Error; err != nil {
 		return nil, err
 	}
 	return &tier, nil

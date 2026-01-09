@@ -28,6 +28,7 @@ type GroupBuyUsecaseContract interface {
 	GetSessionForBuyerByCode(ctx context.Context, sessionCode string, userId int64) (*dto.GetBuyerGroupSessionResponse, error)
 	JoinSession(ctx context.Context, sessionCode string, userID int64) error
 	ChangeBuyerSessionStatus(ctx context.Context, buyerSessionID string, status string) error
+	GetBuyerGroupSessionTier(ctx context.Context, tierID string) (*entity.GroupBuyTier, error)
 }
 
 type GroupBuyUsecase struct {
@@ -379,4 +380,13 @@ func (g *GroupBuyUsecase) JoinSession(ctx context.Context, sessionCode string, u
 
 func (g *GroupBuyUsecase) ChangeBuyerSessionStatus(ctx context.Context, buyerSessionID string, status string) error {
 	return g.buyerGroupSessionRepo.ChangeBuyerSessionStatus(ctx, buyerSessionID, status)
+}
+
+func (g *GroupBuyUsecase) GetBuyerGroupSessionTier(ctx context.Context, tierID string) (*entity.GroupBuyTier, error) {
+	tier, err := g.groupBuyTierRepo.FindByID(ctx, tierID)
+	if err != nil {
+		g.log.Errorf("failed to get tier: %v", err)
+		return nil, err
+	}
+	return tier, nil
 }

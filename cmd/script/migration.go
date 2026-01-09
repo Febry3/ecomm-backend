@@ -10,8 +10,8 @@ func main() {
 	log := config.NewLogrus()
 	viperConfig := config.NewViper(log)
 	db, _ := config.NewGorm(viperConfig, log)
-	_ = db.Migrator().DropTable(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{}, &entity.Address{}, &entity.Seller{}, &entity.Product{}, &entity.ProductVariant{}, &entity.ProductVariantStock{}, &entity.Category{}, &entity.ProductImage{}, &entity.GroupBuySession{}, &entity.GroupBuyTier{}, &entity.BuyerGroupSession{}, &entity.BuyerGroupMember{}, &entity.Order{}, &entity.OrderShippingDetail{}, &entity.Payment{})
-	_ = db.AutoMigrate(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{}, &entity.Address{}, &entity.Seller{}, &entity.Product{}, &entity.ProductVariant{}, &entity.ProductVariantStock{}, &entity.Category{}, &entity.ProductImage{}, &entity.GroupBuySession{}, &entity.GroupBuyTier{}, &entity.BuyerGroupSession{}, &entity.BuyerGroupMember{}, &entity.Order{}, &entity.OrderShippingDetail{}, &entity.Payment{})
+	_ = db.Migrator().DropTable(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{}, &entity.Address{}, &entity.Seller{}, &entity.Product{}, &entity.ProductVariant{}, &entity.ProductVariantStock{}, &entity.Category{}, &entity.ProductImage{}, &entity.GroupBuySession{}, &entity.GroupBuyTier{}, &entity.BuyerGroupSession{}, &entity.BuyerGroupMember{}, &entity.Order{}, &entity.OrderShippingDetail{}, &entity.Payment{}, &entity.UserWallet{})
+	_ = db.AutoMigrate(&entity.User{}, &entity.AuthProvider{}, &entity.RefreshToken{}, &entity.Address{}, &entity.Seller{}, &entity.Product{}, &entity.ProductVariant{}, &entity.ProductVariantStock{}, &entity.Category{}, &entity.ProductImage{}, &entity.GroupBuySession{}, &entity.GroupBuyTier{}, &entity.BuyerGroupSession{}, &entity.BuyerGroupMember{}, &entity.Order{}, &entity.OrderShippingDetail{}, &entity.Payment{}, &entity.UserWallet{})
 
 	CategorySeeder(db)
 }

@@ -19,6 +19,8 @@ type CreateGroupBuyOrderRequest struct {
 	BuyerGroupSessionID string `json:"buyer_group_session_id" validate:"required,uuid"`
 	AddressID           string `json:"address_id" validate:"required,uuid"`
 	BankCode            string `json:"bank_code" validate:"required,oneof=bca bni bri mandiri permata cimb"`
+	CashBack            int64  `json:"cash_back" validate:""`
+	GroupBuyTierID      string `json:"product_group_buy_tier_id" validate:"required,uuid"`
 }
 
 // ========================================
